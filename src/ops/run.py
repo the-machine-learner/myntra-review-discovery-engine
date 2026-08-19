@@ -1,4 +1,9 @@
-"""Operational runner for multi-stage refresh pipelines (ingest -> embed -> analyze)."""
+"""Operational runner for multi-stage refresh pipelines (ingest -> embed).
+
+The analysis layer (theme/segmentation/user-needs/multi-category pipelines) was
+removed pending a from-scratch redesign for the Myntra domain. This runner only
+carries the corpus and vector index forward until that layer is rebuilt.
+"""
 
 from __future__ import annotations
 
@@ -12,10 +17,6 @@ from dotenv import load_dotenv
 from src.config import PROCESSED_DIR, PROJECT_ROOT, VECTOR_STORE_DIR
 from src.ingestion.run import run_ingestion
 from src.embeddings.run import run_embed_all
-from src.analysis.run import main as run_core_analysis
-from src.analysis.run_segmentation import run_segmentation_pipeline
-from src.analysis.run_user_needs import run_user_needs_pipeline
-from src.analysis.run_multi_category import run_multi_category_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,6 @@ logger = logging.getLogger(__name__)
 def run_refresh_pipeline(
     incremental: bool = True,
     lookback_weeks: int = 10,
-    rule_baseline: bool = False,
     reviews_path: Path | None = None,
     output_dir: Path | None = None,
 ) -> int:
@@ -52,26 +52,7 @@ def run_refresh_pipeline(
         embed_stats.get("collection_count_after", 0),
     )
 
-    logger.info("=== STAGE 3: Core & Segment Analysis Pipelines ===")
-    analysis_args = ["--input", str(in_path), "--output-dir", str(out_dir)]
-    if rule_baseline:
-        analysis_args.append("--rule-baseline")
-    
-    code = run_core_analysis(analysis_args)
-    if code != 0:
-        logger.error("Core analysis stage failed with exit code %d", code)
-        return code
-
-    logger.info("Running Customer Segmentation pipeline...")
-    run_segmentation_pipeline(reviews_file=in_path, output_dir=out_dir)
-
-    logger.info("Running User Needs Grievances pipeline...")
-    run_user_needs_pipeline(reviews_file=in_path, output_dir=out_dir)
-
-    logger.info("Running Multi-Category Shopper pipeline...")
-    run_multi_category_pipeline(reviews_file=in_path, output_dir=out_dir)
-
-    logger.info("=== REFRESH PIPELINE COMPLETED SUCCESSFULLY ===")
+    logger.info("=== REFRESH PIPELINE COMPLETED (analysis stage pending redesign) ===")
     return 0
 
 
@@ -79,7 +60,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Myntra Operational Orchestrator")
     subparsers = parser.add_subparsers(dest="subcommand", required=True)
 
-    refresh_parser = subparsers.add_parser("refresh", help="Run full refresh pipeline: ingest -> embed -> analyze")
+    refresh_parser = subparsers.add_parser("refresh", help="Run refresh pipeline: ingest -> embed")
     refresh_parser.add_argument(
         "--incremental",
         action="store_true",
@@ -97,11 +78,6 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=10,
         help="Lookback window in weeks for full build or initial sync",
-    )
-    refresh_parser.add_argument(
-        "--rule-baseline",
-        action="store_true",
-        help="Force rule-based keyword analysis (skips Groq API calls)",
     )
     refresh_parser.add_argument("-v", "--verbose", action="store_true")
     return parser
@@ -121,7 +97,6 @@ def main(argv: list[str] | None = None) -> int:
         return run_refresh_pipeline(
             incremental=args.incremental,
             lookback_weeks=args.lookback_weeks,
-            rule_baseline=args.rule_baseline,
         )
     
     return 0
