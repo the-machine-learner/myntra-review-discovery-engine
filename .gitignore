@@ -1,0 +1,34 @@
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+
+# IDE & OS Files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Explicitly ensure data directory artifacts are tracked for deployment
+!data/
+!data/raw/
+!data/processed/
+!data/chroma_db/
+.streamlit/secrets.toml

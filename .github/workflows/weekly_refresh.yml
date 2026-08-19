@@ -1,0 +1,79 @@
+name: Weekly review refresh
+
+on:
+  workflow_dispatch:
+    inputs:
+      use_groq:
+        description: "Use Groq for richer theme analysis (SPENDS TOKENS). Default false = keyword baseline, no tokens."
+        required: false
+        default: "false"
+  schedule:
+    - cron: "0 6 * * 1"  # Mondays 06:00 UTC
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weekly-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Refresh pipeline (incremental ingest -> embed -> analyze)
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          EMBEDDING_BACKEND: local
+          USE_GROQ: ${{ github.event.inputs.use_groq || 'false' }}
+          # Only used when USE_GROQ=true: pace calls under free-tier per-minute limits.
+          GROQ_THROTTLE: "true"
+          GROQ_RPM_LIMIT: "28"
+          GROQ_TPM_LIMIT: "11000"
+          GROQ_CALL_SLEEP_S: "0.5"
+        run: |
+          set -e
+          # Always run incremental refresh (merges new reviews into existing corpus)
+          if [ "${USE_GROQ}" = "true" ]; then
+            echo "Incremental refresh WITH Groq theme analysis (spends tokens)..."
+            python -m src.ops.run refresh --incremental
+          else
+            echo "Incremental refresh with keyword baseline — NO Groq tokens..."
+            python -m src.ops.run refresh --incremental --rule-baseline
+          fi
+
+      - name: Smoke test
+        continue-on-error: true
+        env:
+          EMBEDDING_BACKEND: local
+          RAG_USE_GROQ: "false"  # validate retrieval without spending chat tokens
+        run: python scripts/smoke_test.py
+
+      - name: Verify search index matches corpus
+        env:
+          EMBEDDING_BACKEND: local
+        run: python scripts/verify_index.py
+
+      - name: Commit refreshed artifacts if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/processed/*.json data/processed/lkg/ vector_store/
+          if git diff --staged --quiet; then
+            echo "No artifact changes to commit."
+          else
+            git commit -m "chore: weekly review refresh (ingest + embed + analysis + search index)"
+            git pull --rebase origin main
+            git push
+          fi
