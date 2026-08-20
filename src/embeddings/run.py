@@ -21,6 +21,7 @@ from src.embeddings.store import (
     content_hash,
 )
 from src.ingestion.schema import NormalizedReview
+from src.analysis.taxonomy import classify_rule_based
 
 DEFAULT_REVIEWS_PATH = PROCESSED_DIR / "normalized_reviews.json"
 DEFAULT_BATCH_SIZE = 128
@@ -36,27 +37,33 @@ def load_reviews(path: Path) -> list[NormalizedReview]:
 def filter_pending(
     reviews: list[NormalizedReview],
     store: ReviewVectorStore,
-) -> tuple[list[NormalizedReview], list[str], list[str], Counter[str]]:
+) -> tuple[list[NormalizedReview], list[str], list[str], list[list[str]], Counter[str]]:
     stats: Counter[str] = Counter()
     pending_reviews: list[NormalizedReview] = []
     pending_docs: list[str] = []
     pending_hashes: list[str] = []
+    pending_tags: list[list[str]] = []
 
     stored_hashes = store.stored_hashes()
 
     for review in reviews:
-        doc = compose_document(review)
+        # Tags computed once, before compose_document/review_metadata, so
+        # embedded text and stored metadata never diverge (see embeddings/
+        # store.py's compose_document/review_metadata for how tags flow in).
+        tags = classify_rule_based(review.body)
+        doc = compose_document(review, tags=tags)
         doc_hash = content_hash(doc)
         if stored_hashes.get(review.review_id) != doc_hash:
             pending_reviews.append(review)
             pending_docs.append(doc)
             pending_hashes.append(doc_hash)
+            pending_tags.append(tags)
         else:
             stats["skipped_unchanged"] += 1
 
     stats["total_input"] = len(reviews)
     stats["pending_embed"] = len(pending_reviews)
-    return pending_reviews, pending_docs, pending_hashes, stats
+    return pending_reviews, pending_docs, pending_hashes, pending_tags, stats
 
 
 def run_embed_all(
@@ -71,7 +78,7 @@ def run_embed_all(
     store = ReviewVectorStore(persist_dir=persist_dir)
     embedder = LocalEmbedder()
 
-    pending_reviews, pending_docs, pending_hashes, stats = filter_pending(reviews, store)
+    pending_reviews, pending_docs, pending_hashes, pending_tags, stats = filter_pending(reviews, store)
     stats["embedding_backend"] = "local"
     stats["embedding_model"] = embedder.model_name
     stats["collection_count_before"] = store.count()
@@ -90,9 +97,10 @@ def run_embed_all(
         batch_docs = pending_docs[batch_start : batch_start + batch_size]
         batch_revs = pending_reviews[batch_start : batch_start + batch_size]
         batch_hashes = pending_hashes[batch_start : batch_start + batch_size]
+        batch_tags = pending_tags[batch_start : batch_start + batch_size]
 
         batch_vectors = embedder.embed_texts(batch_docs)
-        store.upsert_batch(batch_revs, batch_vectors, batch_docs, batch_hashes)
+        store.upsert_batch(batch_revs, batch_vectors, batch_docs, batch_hashes, tags=batch_tags)
         embedded_count += len(batch_docs)
 
         stats["newly_embedded"] = embedded_count

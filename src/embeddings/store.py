@@ -15,6 +15,7 @@ from chromadb.errors import ChromaError
 
 from src.config import PROCESSED_DIR, VECTOR_STORE_DIR
 from src.ingestion.schema import NormalizedReview
+from src.analysis.taxonomy import TAXONOMY
 
 logger = logging.getLogger(__name__)
 
@@ -22,50 +23,29 @@ COLLECTION_NAME = "myntra_reviews"
 CHECKPOINT_PATH = PROCESSED_DIR / "embed_checkpoint.json"
 
 
-def compose_document(review: NormalizedReview | dict[str, Any]) -> str:
+def compose_document(review: NormalizedReview | dict[str, Any], tags: list[str] | None = None) -> str:
     if isinstance(review, NormalizedReview):
         title, body = review.title, review.body
     else:
         title = str(review.get("title") or "")
         body = str(review.get("body") or "")
     text = f"{title} {body}".strip()
-    
-    # Asymmetric Semantic Query Tuning (Doc2Query / Question Alignment)
-    try:
-        from src.analysis.sampler import segment_hints
-        hints = segment_hints(body)
-        
-        anchors = []
-        if hints.get("household"):
-            anchors.append("Why do users repeatedly buy from the same categories?")
-            anchors.append("What role do habits play in shopping behavior?")
-        if hints.get("multi_platformer"):
-            anchors.append("What prevents users from exploring new categories?")
-            anchors.append("What information do users need before trying a new category?")
-            anchors.append("What frustrations emerge repeatedly?")
-        if hints.get("impulse_night"):
-            anchors.append("Which user segments are more likely to experiment?")
-            anchors.append("How do users discover products today?")
-            anchors.append("What role do habits play in shopping behavior?")
-        if hints.get("emergency_sos"):
-            anchors.append("What frustrations emerge repeatedly?")
-            anchors.append("What unmet needs emerge consistently across discussions?")
-        if hints.get("premium_wellness"):
-            anchors.append("Which user segments are more likely to experiment?")
-            anchors.append("How do users discover products today?")
-            
-        body_lower = body.lower()
-        if "wish" in body_lower or "want" in body_lower or "please" in body_lower:
-            anchors.append("What unmet needs emerge consistently across discussions?")
-        if "recommend" in body_lower or "suggest" in body_lower or "search" in body_lower:
-            anchors.append("How do users discover products today?")
-            
+
+    # Doc2Query-style anchor-question injection, driven by the taxonomy's own
+    # rule-based tags (computed once by the caller — see embeddings/run.py —
+    # and passed in here, never re-derived) so retrieval recall improves for
+    # question-style live queries. Unlike the old version this replaced, a
+    # misconfigured taxonomy fails loudly here, not via a swallowed except.
+    if tags:
+        anchors: list[str] = []
+        for area_id in tags:
+            area = TAXONOMY.get(area_id)
+            if area:
+                anchors.extend(area.anchor_questions[:2])
         if anchors:
             unique_anchors = list(dict.fromkeys(anchors))
-            text = f"{text}\n[Context Alignment Queries: {' '.join(unique_anchors)}]"
-    except Exception:
-        pass
-        
+            text = f"{text}\n[Related questions: {' '.join(unique_anchors)}]"
+
     return text or body
 
 
@@ -73,8 +53,10 @@ def content_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def review_metadata(review: NormalizedReview, doc_hash: str) -> dict[str, str | int]:
-    return {
+def review_metadata(
+    review: NormalizedReview, doc_hash: str, tags: list[str] | None = None
+) -> dict[str, str | int | bool]:
+    meta: dict[str, str | int | bool] = {
         "review_id": review.review_id,
         "platform": review.platform,
         "rating": int(review.rating),
@@ -82,6 +64,11 @@ def review_metadata(review: NormalizedReview, doc_hash: str) -> dict[str, str | 
         "app_version": review.app_version or "",
         "content_hash": doc_hash,
     }
+    tag_set = set(tags or [])
+    for area_id in TAXONOMY:
+        meta[f"tag_{area_id}"] = area_id in tag_set
+    meta["tag_count"] = len(tag_set)
+    return meta
 
 
 class ReviewVectorStore:
@@ -144,14 +131,20 @@ class ReviewVectorStore:
         embeddings: list[list[float]],
         documents: list[str],
         hashes: list[str],
+        tags: list[list[str]] | None = None,
     ) -> None:
         if not reviews:
             return
         if not (len(reviews) == len(embeddings) == len(documents) == len(hashes)):
             raise ValueError("upsert_batch: mismatched list lengths")
+        if tags is not None and len(tags) != len(reviews):
+            raise ValueError("upsert_batch: tags length mismatch")
 
         ids = [r.review_id for r in reviews]
-        metadatas = [review_metadata(r, h) for r, h in zip(reviews, hashes)]
+        tags = tags or [[] for _ in reviews]
+        metadatas = [
+            review_metadata(r, h, t) for r, h, t in zip(reviews, hashes, tags)
+        ]
         
         # Split into small chunks to avoid Chroma payload limits
         chunk = 32
@@ -208,15 +201,19 @@ class ReviewVectorStore:
         query_embedding: list[float],
         n_results: int = 5,
         include_embeddings: bool = False,
+        where: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         include = ["documents", "metadatas", "distances"]
         if include_embeddings:
             include.append("embeddings")
-        return self.collection.query(
+        kwargs: dict[str, Any] = dict(
             query_embeddings=[query_embedding],
             n_results=n_results,
             include=include,
         )
+        if where:
+            kwargs["where"] = where
+        return self.collection.query(**kwargs)
 
     @staticmethod
     def distance_to_similarity(distance: float) -> float:

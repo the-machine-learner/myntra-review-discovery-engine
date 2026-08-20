@@ -1,10 +1,13 @@
 # ⚡ Myntra VOC Analysis Engine
 
-A Voice-of-Customer (VOC) data pipeline that ingests customer reviews across 4 channels
-(**Google Play Store, Apple App Store, YouTube Comments, X/Twitter**), normalizes them
-into one corpus, and indexes them into a vector store for retrieval.
+A Voice-of-Customer (VOC) data pipeline that ingests customer reviews across
+**Google Play Store, Apple App Store, YouTube Comments, and X/Twitter** by
+default, plus an opt-in **MouthShut.com** source (`--sources ...,mouthshut`;
+needs Playwright+Chromium — see `fetch_mouthshut()` in `src/ingestion/
+fetch.py`), normalizes them into one corpus, and indexes them into a vector
+store for retrieval.
 
-> Reddit was evaluated as a 5th channel (PRAW, then two Apify actors as
+> Reddit was evaluated as a channel (PRAW, then two Apify actors as
 > no-login fallbacks) and removed — see git history (commit tagged "Reddit
 > ingestion: Apify integration") for the full exploration if revisiting this.
 

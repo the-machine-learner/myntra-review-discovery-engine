@@ -33,7 +33,12 @@ class ReviewRetriever:
     def corpus_size(self) -> int:
         return self.store.count()
 
-    def retrieve(self, question: str, top_k: int | None = None) -> list[RetrievedReview]:
+    def retrieve(
+        self,
+        question: str,
+        top_k: int | None = None,
+        where: dict | None = None,
+    ) -> list[RetrievedReview]:
         k = top_k if top_k is not None else int(get_secret("RAG_TOP_K", str(RAG_TOP_K)))
         count = self.store.count()
         if count == 0:
@@ -45,6 +50,7 @@ class ReviewRetriever:
             vector,
             n_results=min(fetch_k, count),
             include_embeddings=True,
+            where=where,
         )
 
         ids = results["ids"][0]

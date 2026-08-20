@@ -7,3 +7,10 @@ langdetect>=1.0.9
 python-dotenv>=1.0.0
 pandas>=2.0.0
 requests>=2.25.0
+
+# MouthShut ingestion — needs a real browser to pass Cloudflare's JS challenge
+# (curl/requests get a 403; see src/ingestion/fetch.py::fetch_mouthshut).
+# After `pip install`, also run: playwright install chromium
+playwright>=1.40.0
+beautifulsoup4>=4.12.0
+lxml>=5.0.0

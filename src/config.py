@@ -32,6 +32,10 @@ APP_STORE_ID = int(get_secret("APP_STORE_ID", "907394059"))
 LOOKBACK_WEEKS = int(get_secret("LOOKBACK_WEEKS", "10"))
 MIN_WORD_COUNT = int(get_secret("MIN_WORD_COUNT", "6"))
 
+# MouthShut ingestion (needs Playwright + Chromium — see requirements.txt)
+MOUTHSHUT_PRODUCT_SLUG = get_secret("MOUTHSHUT_PRODUCT_SLUG", "myntra-reviews-925076140")
+MOUTHSHUT_MAX_PAGES = int(get_secret("MOUTHSHUT_MAX_PAGES", "50"))
+
 # Embeddings configuration
 EMBEDDING_BACKEND = get_secret("EMBEDDING_BACKEND", "local")
 LOCAL_EMBEDDING_MODEL = get_secret("LOCAL_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
@@ -57,5 +61,20 @@ RAG_FALLBACK = str(get_secret("RAG_FALLBACK", "true")).lower() == "true"
 USE_GROQ_SEGMENTATION = str(get_secret("USE_GROQ_SEGMENTATION", "false")).lower() == "true"
 SERPAPI_API_KEY = get_secret("SERPAPI_API_KEY", "")
 GROQ_API_KEY = get_secret("GROQ_API_KEY", "")
+
+# Groq free-tier throttle — realistic free-tier limits for llama-3.3-70b-versatile
+GROQ_RPM_LIMIT = int(get_secret("GROQ_RPM_LIMIT", "28"))
+GROQ_TPM_LIMIT = int(get_secret("GROQ_TPM_LIMIT", "11000"))
+GROQ_THROTTLE = str(get_secret("GROQ_THROTTLE", "true")).lower() == "true"
+
+# Shared batch+live daily budget (placeholders — confirm against your Groq console)
+GROQ_RPD_LIMIT = int(get_secret("GROQ_RPD_LIMIT", "1000"))
+GROQ_TPD_LIMIT = int(get_secret("GROQ_TPD_LIMIT", "500000"))
+GROQ_LIVE_CHAT_RESERVED_PCT = float(get_secret("GROQ_LIVE_CHAT_RESERVED_PCT", "0.25"))
+GROQ_BUDGET_STATE_FILE = get_secret("GROQ_BUDGET_STATE_FILE", "groq_budget_state.json")
+
+# Opportunity-area analysis
+ANALYSIS_PROMPT_VERSION = get_secret("ANALYSIS_PROMPT_VERSION", "wishlist_v1")
+OPPORTUNITY_SAMPLE_CAP_PER_AREA = int(get_secret("OPPORTUNITY_SAMPLE_CAP_PER_AREA", "40"))
 
 

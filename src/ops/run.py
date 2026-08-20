@@ -1,8 +1,14 @@
-"""Operational runner for multi-stage refresh pipelines (ingest -> embed).
+"""Operational runner for multi-stage refresh pipelines.
 
-The analysis layer (theme/segmentation/user-needs/multi-category pipelines) was
-removed pending a from-scratch redesign for the Myntra domain. This runner only
-carries the corpus and vector index forward until that layer is rebuilt.
+Stage sequence:
+  1. Ingestion            (unchanged)
+  2. Embedding + indexing (extended — threads taxonomy tags through)
+  3. Opportunity analysis (new, opt-in via --run-analysis — costs Groq tokens)
+
+Cadence is deliberately decoupled given the token constraint: ingest+embed is
+cheap/local and can run on the existing weekly_refresh.yml schedule; the
+analysis stage is opt-in per run (or use --analysis-only to rerun scoring
+without re-ingesting, e.g. while iterating on the taxonomy/prompts).
 """
 
 from __future__ import annotations
@@ -26,33 +32,52 @@ def run_refresh_pipeline(
     lookback_weeks: int = 10,
     reviews_path: Path | None = None,
     output_dir: Path | None = None,
+    run_analysis_stage: bool = False,
+    analysis_only: bool = False,
+    area_ids: list[str] | None = None,
 ) -> int:
     in_path = reviews_path or (PROCESSED_DIR / "normalized_reviews.json")
     out_dir = output_dir or PROCESSED_DIR
 
-    logger.info("=== STAGE 1: Ingestion ===")
-    logger.info("Running ingestion (incremental=%s, lookback_weeks=%d)...", incremental, lookback_weeks)
-    reviews, stats = run_ingestion(
-        output_path=in_path,
-        lookback_weeks=lookback_weeks,
-        incremental=incremental,
-    )
-    logger.info("Ingestion complete. Total corpus size: %d reviews.", len(reviews))
+    if not analysis_only:
+        logger.info("=== STAGE 1: Ingestion ===")
+        logger.info("Running ingestion (incremental=%s, lookback_weeks=%d)...", incremental, lookback_weeks)
+        reviews, stats = run_ingestion(
+            output_path=in_path,
+            lookback_weeks=lookback_weeks,
+            incremental=incremental,
+        )
+        logger.info("Ingestion complete. Total corpus size: %d reviews.", len(reviews))
 
-    logger.info("=== STAGE 2: Embedding & Vector Store Indexing ===")
-    logger.info("Indexing embeddings into ChromaDB at %s...", VECTOR_STORE_DIR)
-    embed_stats = run_embed_all(
-        reviews_path=in_path,
-        batch_size=128,
-        persist_dir=VECTOR_STORE_DIR,
-    )
-    logger.info(
-        "Embedding complete. Newly embedded: %d, Total vector count: %d",
-        embed_stats.get("newly_embedded", 0),
-        embed_stats.get("collection_count_after", 0),
-    )
+        logger.info("=== STAGE 2: Embedding & Vector Store Indexing ===")
+        logger.info("Indexing embeddings into ChromaDB at %s...", VECTOR_STORE_DIR)
+        embed_stats = run_embed_all(
+            reviews_path=in_path,
+            batch_size=128,
+            persist_dir=VECTOR_STORE_DIR,
+        )
+        logger.info(
+            "Embedding complete. Newly embedded: %d, Total vector count: %d",
+            embed_stats.get("newly_embedded", 0),
+            embed_stats.get("collection_count_after", 0),
+        )
+    else:
+        logger.info("--analysis-only: skipping ingest/embed stages")
 
-    logger.info("=== REFRESH PIPELINE COMPLETED (analysis stage pending redesign) ===")
+    if run_analysis_stage or analysis_only:
+        logger.info("=== STAGE 3: Opportunity-Area Analysis ===")
+        from src.analysis.pipeline import run_analysis
+
+        result = run_analysis(in_path, area_ids=area_ids)
+        meta = result["run_metadata"]
+        logger.info(
+            "Analysis complete. Groq calls: %d, est. tokens: %d, validation_ok: %s",
+            meta["groq_call_count"], meta["estimated_tokens_used"], meta["validation_ok"],
+        )
+    else:
+        logger.info("Analysis stage skipped (pass --run-analysis to include it, costs Groq tokens)")
+
+    logger.info("=== REFRESH PIPELINE COMPLETED ===")
     return 0
 
 
@@ -60,7 +85,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Myntra Operational Orchestrator")
     subparsers = parser.add_subparsers(dest="subcommand", required=True)
 
-    refresh_parser = subparsers.add_parser("refresh", help="Run refresh pipeline: ingest -> embed")
+    refresh_parser = subparsers.add_parser("refresh", help="Run refresh pipeline: ingest -> embed -> [analysis]")
     refresh_parser.add_argument(
         "--incremental",
         action="store_true",
@@ -79,6 +104,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=10,
         help="Lookback window in weeks for full build or initial sync",
     )
+    refresh_parser.add_argument(
+        "--run-analysis",
+        action="store_true",
+        help="Also run the opportunity-area analysis stage (costs Groq tokens).",
+    )
+    refresh_parser.add_argument(
+        "--analysis-only",
+        action="store_true",
+        help="Skip ingest/embed, only (re)run the analysis stage on the existing corpus.",
+    )
+    refresh_parser.add_argument(
+        "--areas",
+        type=str,
+        default=None,
+        help="Comma-separated area_ids for the analysis stage (default: MVP 7).",
+    )
     refresh_parser.add_argument("-v", "--verbose", action="store_true")
     return parser
 
@@ -94,11 +135,15 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     if args.subcommand == "refresh":
+        area_ids = [a.strip() for a in args.areas.split(",") if a.strip()] if args.areas else None
         return run_refresh_pipeline(
             incremental=args.incremental,
             lookback_weeks=args.lookback_weeks,
+            run_analysis_stage=args.run_analysis,
+            analysis_only=args.analysis_only,
+            area_ids=area_ids,
         )
-    
+
     return 0
 
 

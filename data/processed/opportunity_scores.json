@@ -1,0 +1,241 @@
+[
+  {
+    "area_id": "comparison_paralysis",
+    "label": "Comparison Paralysis",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 10,
+      "corpus_size": 270,
+      "pct": 3.7,
+      "platform_breakdown": {
+        "youtube": 10
+      }
+    },
+    "impact": {
+      "avg_rating_of_matches": 3.0,
+      "rating_impact_score": 50.0,
+      "llm_avg_severity": 0.0,
+      "llm_severity_score": 0.0,
+      "blended_impact_score": 50.0,
+      "llm_sample_n": 0
+    },
+    "confidence": {
+      "sample_coverage_pct": 0.0,
+      "cross_platform_count": 1,
+      "rule_llm_agreement_pct": 0.0,
+      "confidence_score": 0.0
+    },
+    "signal_score": 57.5,
+    "trend": {
+      "prior_run_pct": null,
+      "delta_pp": null
+    },
+    "top_quotes": [],
+    "llm_synthesis": "",
+    "supporting_review_ids": []
+  },
+  {
+    "area_id": "styling_occasion_uncertainty",
+    "label": "Styling & Occasion Uncertainty",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 7,
+      "corpus_size": 270,
+      "pct": 2.59,
+      "platform_breakdown": {
+        "youtube": 7
+      }
+    },
+    "impact": {
+      "avg_rating_of_matches": 3.0,
+      "rating_impact_score": 50.0,
+      "llm_avg_severity": 0.0,
+      "llm_severity_score": 0.0,
+      "blended_impact_score": 50.0,
+      "llm_sample_n": 0
+    },
+    "confidence": {
+      "sample_coverage_pct": 0.0,
+      "cross_platform_count": 1,
+      "rule_llm_agreement_pct": 0.0,
+      "confidence_score": 0.0
+    },
+    "signal_score": 45.5,
+    "trend": {
+      "prior_run_pct": null,
+      "delta_pp": null
+    },
+    "top_quotes": [],
+    "llm_synthesis": "",
+    "supporting_review_ids": []
+  },
+  {
+    "area_id": "external_validation_seeking",
+    "label": "External Validation-Seeking",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 5,
+      "corpus_size": 270,
+      "pct": 1.85,
+      "platform_breakdown": {
+        "youtube": 5
+      }
+    },
+    "impact": {
+      "avg_rating_of_matches": 3.0,
+      "rating_impact_score": 50.0,
+      "llm_avg_severity": 0.0,
+      "llm_severity_score": 0.0,
+      "blended_impact_score": 50.0,
+      "llm_sample_n": 0
+    },
+    "confidence": {
+      "sample_coverage_pct": 0.0,
+      "cross_platform_count": 1,
+      "rule_llm_agreement_pct": 0.0,
+      "confidence_score": 0.0
+    },
+    "signal_score": 37.5,
+    "trend": {
+      "prior_run_pct": null,
+      "delta_pp": null
+    },
+    "top_quotes": [],
+    "llm_synthesis": "",
+    "supporting_review_ids": []
+  },
+  {
+    "area_id": "size_fit_uncertainty",
+    "label": "Fit & Size Uncertainty",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 3,
+      "corpus_size": 270,
+      "pct": 1.11,
+      "platform_breakdown": {
+        "youtube": 3
+      }
+    },
+    "impact": {
+      "avg_rating_of_matches": 3.0,
+      "rating_impact_score": 50.0,
+      "llm_avg_severity": 0.0,
+      "llm_severity_score": 0.0,
+      "blended_impact_score": 50.0,
+      "llm_sample_n": 0
+    },
+    "confidence": {
+      "sample_coverage_pct": 0.0,
+      "cross_platform_count": 1,
+      "rule_llm_agreement_pct": 0.0,
+      "confidence_score": 0.0
+    },
+    "signal_score": 29.5,
+    "trend": {
+      "prior_run_pct": null,
+      "delta_pp": null
+    },
+    "top_quotes": [],
+    "llm_synthesis": "",
+    "supporting_review_ids": []
+  },
+  {
+    "area_id": "wishlist_bookmark_no_intent",
+    "label": "Wishlist as Bookmark, Not Intent",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 0,
+      "corpus_size": 270,
+      "pct": 0.0,
+      "platform_breakdown": {}
+    },
+    "impact": {
+      "avg_rating_of_matches": 0.0,
+      "rating_impact_score": 0.0,
+      "llm_avg_severity": 0.0,
+      "llm_severity_score": 0.0,
+      "blended_impact_score": 0.0,
+      "llm_sample_n": 0
+    },
+    "confidence": {
+      "sample_coverage_pct": 0.0,
+      "cross_platform_count": 0,
+      "rule_llm_agreement_pct": 0.0,
+      "confidence_score": 0.0
+    },
+    "signal_score": 0.0,
+    "trend": {
+      "prior_run_pct": null,
+      "delta_pp": null
+    },
+    "top_quotes": [],
+    "llm_synthesis": "",
+    "supporting_review_ids": []
+  },
+  {
+    "area_id": "stock_size_availability_friction",
+    "label": "Stock / Size / Color Availability Friction",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 0,
+      "corpus_size": 270,
+      "pct": 0.0,
+      "platform_breakdown": {}
+    },
+    "impact": {
+      "avg_rating_of_matches": 0.0,
+      "rating_impact_score": 0.0,
+      "llm_avg_severity": 0.0,
+      "llm_severity_score": 0.0,
+      "blended_impact_score": 0.0,
+      "llm_sample_n": 0
+    },
+    "confidence": {
+      "sample_coverage_pct": 0.0,
+      "cross_platform_count": 0,
+      "rule_llm_agreement_pct": 0.0,
+      "confidence_score": 0.0
+    },
+    "signal_score": 0.0,
+    "trend": {
+      "prior_run_pct": null,
+      "delta_pp": null
+    },
+    "top_quotes": [],
+    "llm_synthesis": "",
+    "supporting_review_ids": []
+  },
+  {
+    "area_id": "wishlist_price_watch",
+    "label": "Wishlist as Price-Drop Watch",
+    "feasible_without_monetary_incentive": "partial",
+    "reach": {
+      "matched_count": 0,
+      "corpus_size": 270,
+      "pct": 0.0,
+      "platform_breakdown": {}
+    },
+    "impact": {
+      "avg_rating_of_matches": 0.0,
+      "rating_impact_score": 0.0,
+      "llm_avg_severity": 0.0,
+      "llm_severity_score": 0.0,
+      "blended_impact_score": 0.0,
+      "llm_sample_n": 0
+    },
+    "confidence": {
+      "sample_coverage_pct": 0.0,
+      "cross_platform_count": 0,
+      "rule_llm_agreement_pct": 0.0,
+      "confidence_score": 0.0
+    },
+    "signal_score": 0.0,
+    "trend": {
+      "prior_run_pct": null,
+      "delta_pp": null
+    },
+    "top_quotes": [],
+    "llm_synthesis": "",
+    "supporting_review_ids": []
+  }
+]

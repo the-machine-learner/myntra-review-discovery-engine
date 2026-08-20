@@ -4,6 +4,7 @@ import os
 import json
 import logging
 import hashlib
+import re
 from datetime import datetime, timedelta, timezone
 from collections import Counter
 from typing import Any
@@ -12,7 +13,14 @@ import requests
 from google_play_scraper import Sort, reviews as play_reviews
 from google_play_scraper.exceptions import NotFoundError
 
-from src.config import PACKAGE_NAME, APP_STORE_ID, RAW_DIR, SERPAPI_API_KEY
+from src.config import (
+    PACKAGE_NAME,
+    APP_STORE_ID,
+    RAW_DIR,
+    SERPAPI_API_KEY,
+    MOUTHSHUT_PRODUCT_SLUG,
+    MOUTHSHUT_MAX_PAGES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -224,7 +232,144 @@ def fetch_app_store(lookback_weeks: int) -> list[dict[str, Any]]:
                         "_parsed_at": at,
                     })
             logger.info("Loaded %s App Store reviews from local snapshot.", len(collected))
-            
+
+    return collected
+
+
+# --- 3. MOUTHSHUT FETCHER (needs a real browser — Cloudflare blocks curl/requests) ---
+_MOUTHSHUT_RELATIVE_TIME_RE = re.compile(
+    r"(\d+)\s*(hr|hrs|hour|hours|min|mins|minute|minutes|day|days|week|weeks|month|months|year|years)",
+    re.IGNORECASE,
+)
+_MOUTHSHUT_UNIT_SECONDS = {
+    "hr": 3600, "hrs": 3600, "hour": 3600, "hours": 3600,
+    "min": 60, "mins": 60, "minute": 60, "minutes": 60,
+    "day": 86400, "days": 86400,
+    "week": 604800, "weeks": 604800,
+    "month": 2592000, "months": 2592000,  # 30-day approximation
+    "year": 31536000, "years": 31536000,  # 365-day approximation
+}
+
+
+def _parse_mouthshut_date(date_text: str, scraped_at: datetime) -> datetime:
+    """MouthShut mixes relative ("2 hrs 41 mins ago") and absolute
+    ("Jul 20, 2026 03:40 PM") date formats on the same page. Relative dates
+    are resolved against `scraped_at` (the time this page was fetched)."""
+    text = date_text.strip()
+    if "ago" in text.lower():
+        total_seconds = 0
+        for amount, unit in _MOUTHSHUT_RELATIVE_TIME_RE.findall(text):
+            total_seconds += int(amount) * _MOUTHSHUT_UNIT_SECONDS.get(unit.lower(), 0)
+        return scraped_at - timedelta(seconds=total_seconds)
+    try:
+        return _ensure_utc(datetime.strptime(text, "%b %d, %Y %I:%M %p"))
+    except ValueError:
+        return scraped_at
+
+
+def _parse_mouthshut_review(article: Any, scraped_at: datetime, cutoff: datetime) -> dict[str, Any] | None:
+    """Parse one .review-article BeautifulSoup element into a review-like dict."""
+    title_el = article.select_one("strong a")
+    if not title_el:
+        return None
+    title = title_el.get_text(strip=True)
+    url = title_el.get("href") or ""
+
+    rating_span = article.select_one(".rating span")
+    stars = len(rating_span.select("i.rated-star")) if rating_span else 0
+
+    date_el = article.select_one("[id*=lblDateTime]")
+    date_text = date_el.get_text(strip=True) if date_el else ""
+    when = _parse_mouthshut_date(date_text, scraped_at) if date_text else scraped_at
+    if when < cutoff:
+        return None
+
+    body_el = article.select_one(".reviewdata")
+    body_paras = [p.get_text(strip=True) for p in body_el.find_all("p")] if body_el else []
+    body = " ".join(p for p in body_paras if p).strip()
+    if not body:
+        return None
+
+    review_id = _generate_id(url) if url else _generate_id(title + body)
+    return {
+        "review_id": f"mouthshut_{review_id}",
+        "platform": "mouthshut",
+        "date": when.date().isoformat(),
+        "rating": stars or 3,
+        "title": title,
+        "body": body,
+        "app_version": "",
+        "thumbs_up": 0,
+        "_parsed_at": when,
+    }
+
+
+def fetch_mouthshut(lookback_weeks: int, max_pages: int | None = None) -> list[dict[str, Any]]:
+    """Fetch Myntra reviews from MouthShut.com. Requires a real browser
+    (Playwright + Chromium) — plain requests/curl get a Cloudflare 403.
+    Paginates .../product-reviews/{slug}-page-{N} up to `max_pages`, stopping
+    early if a page returns zero reviews (end of available pages reached).
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(weeks=lookback_weeks)
+    max_pages = max_pages if max_pages is not None else MOUTHSHUT_MAX_PAGES
+    collected: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+
+    try:
+        from playwright.sync_api import sync_playwright
+        from bs4 import BeautifulSoup
+    except ImportError:
+        logger.warning(
+            "playwright/beautifulsoup4 not installed — skipping MouthShut "
+            "(run `pip install playwright beautifulsoup4 lxml && playwright install chromium`)"
+        )
+        return collected
+
+    base_url = f"https://www.mouthshut.com/product-reviews/{MOUTHSHUT_PRODUCT_SLUG}"
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+                    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                )
+            )
+            page = context.new_page()
+
+            for page_num in range(1, max_pages + 1):
+                url = base_url if page_num == 1 else f"{base_url}-page-{page_num}"
+                try:
+                    page.goto(url, timeout=30000, wait_until="domcontentloaded")
+                    page.wait_for_timeout(6000)  # let Cloudflare's JS challenge settle
+                    scraped_at = datetime.now(timezone.utc)
+                    soup = BeautifulSoup(page.content(), "lxml")
+                    articles = soup.find_all(class_="review-article")
+                except Exception as e:
+                    logger.warning("MouthShut page %d failed to load: %s", page_num, e)
+                    break
+
+                if not articles:
+                    logger.info("MouthShut page %d returned no reviews — stopping pagination.", page_num)
+                    break
+
+                page_new = 0
+                for article in articles:
+                    parsed = _parse_mouthshut_review(article, scraped_at, cutoff)
+                    if parsed and parsed["review_id"] not in seen_ids:
+                        seen_ids.add(parsed["review_id"])
+                        collected.append(parsed)
+                        page_new += 1
+                logger.info(
+                    "MouthShut page %d: %d reviews found, %d new after dedup/cutoff",
+                    page_num, len(articles), page_new,
+                )
+
+            browser.close()
+    except Exception as e:
+        logger.warning("MouthShut fetch failed: %s", e)
+
     return collected
 
 
@@ -417,6 +562,14 @@ def fetch_all(lookback_weeks: int, sources: list[str] | None = None) -> tuple[li
         as_list = fetch_app_store(lookback_weeks)
         stats["raw_app_store"] = len(as_list)
         all_reviews.extend(as_list)
+
+    # 2b. MouthShut — opt-in only (not in the default set): needs a real
+    # browser (Playwright+Chromium), meaningfully slower than the other
+    # requests-based sources. Pass sources=["mouthshut", ...] explicitly.
+    if "mouthshut" in active_sources:
+        ms_list = fetch_mouthshut(lookback_weeks)
+        stats["raw_mouthshut"] = len(ms_list)
+        all_reviews.extend(ms_list)
 
     # 3. X (Twitter)
     if "x" in active_sources or "twitter" in active_sources:
