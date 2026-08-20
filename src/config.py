@@ -50,7 +50,7 @@ EMBED_BATCH_SIZE = int(get_secret("EMBED_BATCH_SIZE", "128"))
 EMBED_BATCH_SLEEP_S = float(get_secret("EMBED_BATCH_SLEEP_S", "1.0"))
 
 # LLM Chat Model configuration
-GROQ_CHAT_MODEL = get_secret("GROQ_CHAT_MODEL", "llama-3.3-70b-versatile")
+GROQ_CHAT_MODEL = get_secret("GROQ_CHAT_MODEL", "openai/gpt-oss-20b")
 ANALYSIS_SAMPLE_CAP = int(get_secret("ANALYSIS_SAMPLE_CAP", "450"))
 UNMET_NEEDS_SAMPLE_CAP = int(get_secret("UNMET_NEEDS_SAMPLE_CAP", "300"))
 ANALYSIS_BATCH_SIZE = int(get_secret("ANALYSIS_BATCH_SIZE", "20"))
@@ -68,7 +68,11 @@ USE_GROQ_SEGMENTATION = str(get_secret("USE_GROQ_SEGMENTATION", "false")).lower(
 SERPAPI_API_KEY = get_secret("SERPAPI_API_KEY", "")
 GROQ_API_KEY = get_secret("GROQ_API_KEY", "")
 
-# Groq free-tier throttle — realistic free-tier limits for llama-3.3-70b-versatile
+# Groq free-tier throttle — conservative defaults; llama-3.3-70b-versatile was
+# removed from Groq's lineup entirely (confirmed via live API — 404
+# model_not_found), replaced with openai/gpt-oss-20b above. Verify current
+# RPM/TPM limits for your actual model against your Groq console; these
+# numbers are a safe conservative baseline, not verified per-model.
 GROQ_RPM_LIMIT = int(get_secret("GROQ_RPM_LIMIT", "28"))
 GROQ_TPM_LIMIT = int(get_secret("GROQ_TPM_LIMIT", "11000"))
 GROQ_THROTTLE = str(get_secret("GROQ_THROTTLE", "true")).lower() == "true"

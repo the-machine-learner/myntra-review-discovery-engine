@@ -1,0 +1,14 @@
+{
+  "updated_at": "2026-08-20T16:32:57.121393+00:00",
+  "date_utc": "2026-08-20",
+  "daily": {
+    "calls_used": 1,
+    "tokens_used": 1876
+  },
+  "minute_window": [
+    {
+      "ts": 1787243577.121387,
+      "tokens": 1876
+    }
+  ]
+}
