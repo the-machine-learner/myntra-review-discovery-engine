@@ -1,8 +1,12 @@
 # ⚡ Myntra VOC Analysis Engine
 
-A Voice-of-Customer (VOC) data pipeline that ingests customer reviews across 5 channels
-(**Google Play Store, Apple App Store, Reddit, YouTube Comments, X/Twitter**), normalizes them
+A Voice-of-Customer (VOC) data pipeline that ingests customer reviews across 4 channels
+(**Google Play Store, Apple App Store, YouTube Comments, X/Twitter**), normalizes them
 into one corpus, and indexes them into a vector store for retrieval.
+
+> Reddit was evaluated as a 5th channel (PRAW, then two Apify actors as
+> no-login fallbacks) and removed — see git history (commit tagged "Reddit
+> ingestion: Apify integration") for the full exploration if revisiting this.
 
 > **Status:** the analysis layer (theme extraction, segmentation, user-needs, multi-category
 > pipelines) and the output layer (Streamlit dashboard + RAG chatbot) were forked from the
@@ -18,7 +22,7 @@ into one corpus, and indexes them into a vector store for retrieval.
 ```
 myntra-review-discovery-engine/
 ├── data/
-│   ├── raw/                      # Raw ingested reviews from Play Store, App Store, Reddit, YouTube, X
+│   ├── raw/                      # Raw ingested reviews from Play Store, App Store, YouTube, X
 │   └── processed/                # normalized_reviews.json + embed_checkpoint.json
 ├── vector_store/                 # Chroma vector database persistent store
 ├── src/

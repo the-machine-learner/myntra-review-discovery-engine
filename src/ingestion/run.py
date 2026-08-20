@@ -117,7 +117,6 @@ def print_report(stats: Counter[str], output_path: Path) -> None:
     print(f"Output: {output_path}")
     print(f"Raw Google Play:       {stats.get('raw_google_play', 0)}")
     print(f"Raw App Store:         {stats.get('raw_app_store', 0)}")
-    print(f"Raw Reddit:            {stats.get('raw_reddit', 0)}")
     print(f"Raw X (Twitter):       {stats.get('raw_x', 0)}")
     print(f"Raw YouTube:           {stats.get('raw_youtube', 0)}")
     print(f"Total Raw Fetched:     {stats.get('total_raw_fetched', 0)}")
@@ -162,7 +161,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--sources",
         type=str,
         default=None,
-        help="Comma-separated list of active sources (e.g. reddit,youtube)",
+        help="Comma-separated list of active sources (e.g. youtube,x)",
     )
     parser.add_argument(
         "--save-raw",

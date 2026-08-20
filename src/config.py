@@ -46,20 +46,6 @@ UNMET_NEEDS_SAMPLE_CAP = int(get_secret("UNMET_NEEDS_SAMPLE_CAP", "300"))
 ANALYSIS_BATCH_SIZE = int(get_secret("ANALYSIS_BATCH_SIZE", "20"))
 GROQ_CALL_SLEEP_S = float(get_secret("GROQ_CALL_SLEEP_S", "0.5"))
 
-# Reddit configurations
-REDDIT_CLIENT_ID = get_secret("REDDIT_CLIENT_ID", "")
-REDDIT_CLIENT_SECRET = get_secret("REDDIT_CLIENT_SECRET", "")
-REDDIT_USER_AGENT = get_secret("REDDIT_USER_AGENT", "macos:com.discoveryengine.scraper:v1.0.0 (by /u/prodkins)")
-
-# Apify Reddit Scraper (fallback Reddit source when PRAW credentials are absent).
-# spry_wholemeal/reddit-scraper: pay-per-Apify-usage, no monthly rental fee —
-# chosen over harshmaur/reddit-scraper-pro ($20/mo rental) since it fits a
-# Free-tier Apify account's $5/mo included usage with no risk of surprise billing.
-APIFY_API_TOKEN = get_secret("APIFY_API_TOKEN", "")
-APIFY_REDDIT_ACTOR_ID = get_secret("APIFY_REDDIT_ACTOR_ID", "spry_wholemeal/reddit-scraper")
-APIFY_MAX_POSTS_PER_QUERY = int(get_secret("APIFY_MAX_POSTS_PER_QUERY", "40"))
-APIFY_MAX_COMMENTS_PER_POST = int(get_secret("APIFY_MAX_COMMENTS_PER_POST", "10"))
-
 # RAG chatbot
 RAG_TOP_K = int(get_secret("RAG_TOP_K", "8"))
 RAG_FETCH_K = int(get_secret("RAG_FETCH_K", "40"))

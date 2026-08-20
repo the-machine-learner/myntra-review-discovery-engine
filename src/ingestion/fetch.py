@@ -12,16 +12,7 @@ import requests
 from google_play_scraper import Sort, reviews as play_reviews
 from google_play_scraper.exceptions import NotFoundError
 
-from src.config import (
-    PACKAGE_NAME,
-    APP_STORE_ID,
-    RAW_DIR,
-    SERPAPI_API_KEY,
-    APIFY_API_TOKEN,
-    APIFY_REDDIT_ACTOR_ID,
-    APIFY_MAX_POSTS_PER_QUERY,
-    APIFY_MAX_COMMENTS_PER_POST,
-)
+from src.config import PACKAGE_NAME, APP_STORE_ID, RAW_DIR, SERPAPI_API_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -236,285 +227,6 @@ def fetch_app_store(lookback_weeks: int) -> list[dict[str, Any]]:
             
     return collected
 
-# --- 3. RESILIENT REDDIT CONNECTOR (3-TIER) ---
-def _parse_reddit_post_dict(post_data: dict[str, Any], cutoff: datetime) -> list[dict[str, Any]]:
-    """Flatten a Reddit post and its comments into individual review-like items."""
-    results = []
-    
-    post_time = datetime.fromtimestamp(post_data.get("created_utc", datetime.now().timestamp()), timezone.utc)
-    if post_time < cutoff:
-        return results
-        
-    post_id = post_data["id"]
-    title = post_data["title"]
-    body = post_data.get("selftext", "").strip()
-    subreddit = post_data.get("subreddit", "india")
-    
-    # OP Post
-    if len(body) > 20: # Only include if it has actual text content
-        results.append({
-            "review_id": f"reddit_post_{post_id}",
-            "platform": "reddit",
-            "date": post_time.date().isoformat(),
-            "rating": 3, # Neutral base rating
-            "title": f"[{subreddit}] {title}",
-            "body": body,
-            "app_version": "",
-            "thumbs_up": int(post_data.get("score", 0)),
-            "_parsed_at": post_time,
-        })
-        
-    # Process Comments
-    comments = post_data.get("comments", [])
-    for idx, comment in enumerate(comments):
-        c_time = datetime.fromtimestamp(comment.get("created_utc", post_time.timestamp()), timezone.utc)
-        c_body = comment.get("body", "").strip()
-        c_author = comment.get("author", "anonymous")
-        
-        if len(c_body) > 15:
-            results.append({
-                "review_id": f"reddit_cmt_{post_id}_{idx}",
-                "platform": "reddit",
-                "date": c_time.date().isoformat(),
-                "rating": 3,
-                "title": f"Comment by u/{c_author} on: {title[:50]}...",
-                "body": c_body,
-                "app_version": "",
-                "thumbs_up": int(comment.get("score", 0)),
-                "_parsed_at": c_time,
-            })
-            
-    return results
-
-def fetch_reddit(lookback_weeks: int) -> list[dict[str, Any]]:
-    cutoff = datetime.now(timezone.utc) - timedelta(weeks=lookback_weeks)
-    collected = []
-    seen_post_ids = set()
-    
-    client_id = os.getenv("REDDIT_CLIENT_ID", "")
-    client_secret = os.getenv("REDDIT_CLIENT_SECRET", "")
-    
-    queries = [
-        # Why do users wishlist at all? (generic, not platform-anchored — people
-        # rarely phrase this as a "myntra" search, it's a shopping-behavior post).
-        # Short, Reddit-title-style phrasing — full-sentence queries were tested
-        # and confirmed to underperform (Reddit search is keyword, not semantic).
-        "myntra wishlist",
-        "clothes wishlist",
-        "saved items never buy",
-        # What prevents a purchase / abandonment
-        "abandoned cart",
-        "buying from wishlist",
-        # Uncertainty + postponing
-        "should i buy this now",
-        "myntra wait for sale",
-        # Comparing multiple shortlisted products
-        "which one should i buy",
-        "can't decide outfit",
-        # External validation-seeking (outside Myntra/Ajio)
-        "rate my outfit",
-        # Fit/size uncertainty
-        "myntra size chart wrong",
-        "myntra true to size",
-        # Stock/variant availability friction
-        "myntra size out of stock",
-        "myntra color unavailable",
-        # Trust/review-credibility
-        "myntra fake reviews",
-        "myntra scam",
-        # Genuine intent vs. bookmarking + unmet needs
-        "myntra wishlist saving for later",
-        "myntra wish they had",
-        "what i ordered vs what i got",
-        "returned it the next day",
-        "wishlist limit",
-    ]
-
-    # Strategy 1: PRAW (Preferred — official Reddit API, needs credentials)
-    if client_id and client_secret:
-        logger.info("Reddit Strategy 1: Attempting PRAW scraper with targeted queries")
-        try:
-            import praw
-            reddit = praw.Reddit(
-                client_id=client_id,
-                client_secret=client_secret,
-                user_agent=os.getenv("REDDIT_USER_AGENT", "macos:com.discoveryengine.scraper:v1.0.0 (by /u/prodkins)")
-            )
-            for q in queries:
-                try:
-                    for post in reddit.subreddit("all").search(q, sort="new", limit=10):
-                        if post.id in seen_post_ids:
-                            continue
-                        seen_post_ids.add(post.id)
-                        
-                        post_data = {
-                            "id": post.id,
-                            "title": post.title,
-                            "subreddit": post.subreddit.display_name,
-                            "selftext": post.selftext,
-                            "score": post.score,
-                            "created_utc": post.created_utc,
-                            "comments": []
-                        }
-                        post.comments.replace_more(limit=0)
-                        for comment in post.comments[:5]:
-                            post_data["comments"].append({
-                                "author": str(comment.author),
-                                "body": comment.body,
-                                "score": comment.score,
-                                "created_utc": comment.created_utc
-                            })
-                        collected.extend(_parse_reddit_post_dict(post_data, cutoff))
-                except Exception as q_err:
-                    logger.warning("PRAW failed for query '%s': %s", q, q_err)
-            logger.info("Reddit PRAW fetch completed. Flattened items: %s", len(collected))
-            if collected:
-                return collected
-        except Exception as e:
-            logger.warning("Reddit PRAW scraper failed: %s. Trying Apify fallback.", e)
-
-    # Strategy 2: Apify Reddit scraper (no Reddit login/API key needed)
-    if APIFY_API_TOKEN:
-        logger.info("Reddit Strategy 2: Attempting Apify Reddit scraper")
-        try:
-            apify_collected = fetch_reddit_via_apify(lookback_weeks, queries)
-            logger.info("Apify Reddit fetch completed. Flattened items: %s", len(apify_collected))
-            if apify_collected:
-                return apify_collected
-        except Exception as e:
-            logger.warning("Apify Reddit scraper failed: %s. Falling back to local raw file.", e)
-
-    # Final Fallback: local raw file
-    reddit_path = RAW_DIR / "reddit_posts.json"
-    if reddit_path.exists():
-        with open(reddit_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            for post_data in data:
-                if post_data["id"] not in seen_post_ids:
-                    seen_post_ids.add(post_data["id"])
-                    collected.extend(_parse_reddit_post_dict(post_data, cutoff))
-        logger.info("Loaded %s Reddit items from local snapshot.", len(collected))
-
-    return collected
-
-
-def _parse_apify_reddit_item(item: dict[str, Any], cutoff: datetime) -> dict[str, Any] | None:
-    """Map one spry_wholemeal/reddit-scraper dataset item (post or comment) into
-    a review-like dict, matching _parse_reddit_post_dict's shape/conventions.
-
-    Field names confirmed against a real sample API response, not just the
-    Actor's public docs (which were incomplete — e.g. undocumented `record_type`
-    discriminator, and both record types carry a direct `post_id`, so no
-    permalink-parsing is needed). Confirmed fields:
-      post:    record_type, post_id, subreddit, title, text, author, score,
-               is_self, created_utc_iso
-      comment: record_type, post_id, comment_id, subreddit, text, author,
-               score, created_utc_iso
-    """
-    record_type = item.get("record_type")
-    if record_type not in ("post", "comment"):
-        return None
-
-    created_str = item.get("created_utc_iso")
-    try:
-        when = _ensure_utc(datetime.fromisoformat(str(created_str).replace("Z", "+00:00")))
-    except (ValueError, TypeError):
-        when = datetime.now(timezone.utc)
-    if when < cutoff:
-        return None
-
-    body = str(item.get("text") or "").strip()
-    author = item.get("author") or "anonymous"
-    score = item.get("score") or 0
-    subreddit = item.get("subreddit") or "reddit"
-    post_id = item.get("post_id") or _generate_id(item.get("permalink") or body)
-
-    if record_type == "comment":
-        if len(body) <= 15:
-            return None
-        comment_id = item.get("comment_id") or _generate_id(item.get("permalink") or f"{author}{body}")
-        return {
-            "review_id": f"reddit_cmt_{post_id}_{comment_id}",
-            "platform": "reddit",
-            "date": when.date().isoformat(),
-            "rating": 3,  # Neutral base rating — Reddit has no star rating
-            "title": f"Comment by u/{author} in r/{subreddit}",
-            "body": body,
-            "app_version": "",
-            "thumbs_up": int(score),
-            "_parsed_at": when,
-        }
-
-    # Post record
-    if len(body) <= 20:
-        return None
-    if not item.get("is_self", True) and body.startswith("submitted by /u/"):
-        # Auto-generated crosspost/gallery/link-post blurb, not real user content
-        return None
-    title = item.get("title") or ""
-    return {
-        "review_id": f"reddit_post_{post_id}",
-        "platform": "reddit",
-        "date": when.date().isoformat(),
-        "rating": 3,
-        "title": f"[{subreddit}] {title}",
-        "body": body,
-        "app_version": "",
-        "thumbs_up": int(score),
-        "_parsed_at": when,
-    }
-
-
-def fetch_reddit_via_apify(lookback_weeks: int, queries: list[str]) -> list[dict[str, Any]]:
-    """Fetch Reddit posts/comments via the Apify 'reddit-scraper' Actor
-    (spry_wholemeal/reddit-scraper — pay-per-Apify-usage, no monthly rental).
-
-    No Reddit login or API key required. Requires APIFY_API_TOKEN to be set —
-    see .env.example. Costs Apify platform usage per run (compute/proxy/storage
-    against your Apify account balance — see src/config.py caps).
-    """
-    cutoff = datetime.now(timezone.utc) - timedelta(weeks=lookback_weeks)
-    if lookback_weeks <= 1:
-        timeframe = "week"
-    elif lookback_weeks <= 4:
-        timeframe = "month"
-    elif lookback_weeks <= 52:
-        timeframe = "year"
-    else:
-        timeframe = "all"
-
-    # Apify's REST API path needs "username~actorName", not the Store's
-    # human-facing "username/actorName" URL format.
-    actor_path = APIFY_REDDIT_ACTOR_ID.replace("/", "~")
-    url = f"https://api.apify.com/v2/acts/{actor_path}/run-sync-get-dataset-items"
-    payload = {
-        "mode": "search",
-        "searchTargets": [{"query": q} for q in queries],
-        "maxPosts": APIFY_MAX_POSTS_PER_QUERY,
-        "sort": "new",
-        "timeframe": timeframe,
-        "includeCommentsMode": "all",
-        "maxTopLevelComments": APIFY_MAX_COMMENTS_PER_POST,
-    }
-
-    response = requests.post(
-        url,
-        params={"token": APIFY_API_TOKEN},
-        json=payload,
-        timeout=120,
-    )
-    response.raise_for_status()
-    items = response.json()
-
-    collected: list[dict[str, Any]] = []
-    seen_ids: set[str] = set()
-    for item in items:
-        parsed = _parse_apify_reddit_item(item, cutoff)
-        if parsed and parsed["review_id"] not in seen_ids:
-            seen_ids.add(parsed["review_id"])
-            collected.append(parsed)
-    return collected
-
 
 # --- 4. X (TWITTER) FETCHER ---
 def fetch_x(lookback_weeks: int) -> list[dict[str, Any]]:
@@ -661,33 +373,27 @@ def fetch_all(lookback_weeks: int, sources: list[str] | None = None) -> tuple[li
     if sources:
         active_sources = {s.lower().strip() for s in sources}
     else:
-        active_sources = {"google_play", "app_store", "reddit", "x", "youtube"}
-        
+        active_sources = {"google_play", "app_store", "x", "youtube"}
+
     # 1. Google Play
     if "google_play" in active_sources or "play_store" in active_sources:
         gp_list = fetch_google_play(lookback_weeks)
         stats["raw_google_play"] = len(gp_list)
         all_reviews.extend(gp_list)
-        
+
     # 2. App Store
     if "app_store" in active_sources or "apple" in active_sources:
         as_list = fetch_app_store(lookback_weeks)
         stats["raw_app_store"] = len(as_list)
         all_reviews.extend(as_list)
-        
-    # 3. Reddit
-    if "reddit" in active_sources:
-        rd_list = fetch_reddit(lookback_weeks)
-        stats["raw_reddit"] = len(rd_list)
-        all_reviews.extend(rd_list)
-        
-    # 4. X (Twitter)
+
+    # 3. X (Twitter)
     if "x" in active_sources or "twitter" in active_sources:
         x_list = fetch_x(lookback_weeks)
         stats["raw_x"] = len(x_list)
         all_reviews.extend(x_list)
-        
-    # 5. YouTube
+
+    # 4. YouTube
     if "youtube" in active_sources:
         yt_list = fetch_youtube(lookback_weeks)
         stats["raw_youtube"] = len(yt_list)
