@@ -263,39 +263,70 @@ def fetch_x(lookback_weeks: int) -> list[dict[str, Any]]:
 def fetch_youtube(lookback_weeks: int) -> list[dict[str, Any]]:
     cutoff = datetime.now(timezone.utc) - timedelta(weeks=lookback_weeks)
     collected = []
-    
+
     api_key = os.getenv("YOUTUBE_API_KEY", "")
-    
+
+    # Queries phrased for YouTube's own video-title conventions (haul/vs/review/
+    # "worth it" are common genre words), mapped to the wishlist-to-purchase
+    # research questions. Each search.list call costs 100 quota units — 13
+    # queries here is ~1,300 units/run, well within the 10,000/day free quota.
+    queries = [
+        # Wishlist / general shopping behavior (haul & declutter genre)
+        "myntra haul",
+        "myntra wishlist",
+        "things i never wore haul",
+        "clean out my closet things i never wore",
+        # Postponing / sale-driven waiting
+        "myntra sale haul",
+        "is myntra sale worth it",
+        # Comparison shopping
+        "myntra vs ajio",
+        "myntra vs ajio vs flipkart",
+        # Fit/size uncertainty
+        "myntra size review",
+        "myntra true to size",
+        # Trust/quality
+        "myntra quality review",
+        "myntra fake or real",
+        # Buying-decision uncertainty
+        "is myntra worth it",
+        # Return experience
+        "myntra return experience",
+    ]
+
     if api_key:
-        logger.info("YouTube Strategy: Attempting YouTube API search & fetch")
-        video_ids = []
-        try:
-            search_url = "https://www.googleapis.com/youtube/v3/search"
-            search_params = {
-                "part": "snippet",
-                "q": '"myntra app review" OR "myntra vs blinkit vs instamart"',
-                "type": "video",
-                "maxResults": 15,
-                "relevanceLanguage": "en",
-                "key": api_key
-            }
-            s_resp = requests.get(search_url, params=search_params, timeout=10)
-            if s_resp.status_code == 200:
-                s_data = s_resp.json()
-                for item in s_data.get("items", []):
-                    vid = item.get("id", {}).get("videoId")
-                    if vid:
-                        video_ids.append(vid)
-                logger.info("YouTube search found videos: %s", video_ids)
-            else:
-                logger.warning("YouTube search API failed with status %s", s_resp.status_code)
-        except Exception as e:
-            logger.warning("YouTube search API call failed: %s", e)
-            
-        # Fallback to configured env IDs if search returned nothing
+        logger.info("YouTube Strategy: Attempting YouTube API search & fetch across %d queries", len(queries))
+        video_ids: list[str] = []
+        seen_video_ids: set[str] = set()
+        search_url = "https://www.googleapis.com/youtube/v3/search"
+        for q in queries:
+            try:
+                search_params = {
+                    "part": "snippet",
+                    "q": q,
+                    "type": "video",
+                    "maxResults": 10,
+                    "relevanceLanguage": "en",
+                    "key": api_key,
+                }
+                s_resp = requests.get(search_url, params=search_params, timeout=10)
+                if s_resp.status_code == 200:
+                    s_data = s_resp.json()
+                    for item in s_data.get("items", []):
+                        vid = item.get("id", {}).get("videoId")
+                        if vid and vid not in seen_video_ids:
+                            seen_video_ids.add(vid)
+                            video_ids.append(vid)
+                else:
+                    logger.warning("YouTube search failed for query '%s': status %s", q, s_resp.status_code)
+            except Exception as e:
+                logger.warning("YouTube search API call failed for query '%s': %s", q, e)
+        logger.info("YouTube search found %d unique videos across %d queries", len(video_ids), len(queries))
+
+        # Fallback to configured env IDs if every search returned nothing
         if not video_ids:
             video_ids = os.getenv("YOUTUBE_VIDEO_IDS", "dQw4w9WgXcQ").split(",")
-            
+
         for video_id in video_ids:
             video_id = video_id.strip()
             if not video_id:

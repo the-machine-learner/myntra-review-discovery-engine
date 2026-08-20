@@ -123,6 +123,7 @@ def print_report(stats: Counter[str], output_path: Path) -> None:
     print(f"Dropped (too short):   {stats.get('dropped_too_short', 0)}")
     print(f"Dropped (emoji-only):  {stats.get('dropped_emoji_only', 0)}")
     print(f"Dropped (non-English): {stats.get('dropped_non_english', 0)}")
+    print(f"Dropped (off-topic):   {stats.get('dropped_not_taxonomy_relevant', 0)}")
     print(f"Dropped (duplicate):   {stats.get('dropped_duplicate', 0)}")
     print(f"Normalized (new fetch):{stats.get('normalized_count', 0)}")
     if "existing_count" in stats:

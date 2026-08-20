@@ -70,6 +70,40 @@ def is_english(text: str) -> bool:
         return False
 
 
+# Cheap, zero-LLM-cost relevance gate for the wishlist-to-purchase-conversion
+# research questions (fit/size, comparison, trust/quality, price/sale-waiting,
+# availability, returns, styling, external validation, wishlist behavior
+# itself). Only applied to noisy social-comment platforms (see
+# TAXONOMY_FILTERED_PLATFORMS below) — app-store reviews are inherently
+# on-topic (they're reviews of the Myntra app) and don't need this gate; a
+# generic "great app 5 stars" review would otherwise get wrongly dropped.
+TAXONOMY_RELEVANCE_PATTERN = re.compile(
+    r"\b("
+    r"wishlist|wish list|"
+    r"size|fit|true to size|too (tight|loose|small|big)|"
+    r"compar(e|ison)|\bvs\.?\b|versus|which (one|is better)|"
+    r"fake|scam|fraud|duplicate|genuine|original|quality|trust|"
+    r"sale|discount|price drop|wait(ing)? for|worth it|worth the (price|money)|expensive|cheap|"
+    r"(out of )?stock|unavailable|available|"
+    r"return|refund|exchange|replace(ment)?|"
+    r"deliver(ed|y)|order(ed)?|received|"
+    r"style|styling|occasion|outfit|pair (it |this )?with|wear|"
+    r"recommend|suggest|honest review|opinion"
+    r")\b",
+    re.IGNORECASE,
+)
+
+# Platforms whose comments are social/reactive (haul-video comments, replies)
+# rather than direct app reviews — these need the relevance gate above.
+# App/Play Store reviews stay ungated since they're already on-topic by
+# construction.
+TAXONOMY_FILTERED_PLATFORMS = {"youtube", "x"}
+
+
+def is_taxonomy_relevant(text: str) -> bool:
+    return bool(TAXONOMY_RELEVANCE_PATTERN.search(text))
+
+
 def normalize_reviews(
     raw_reviews: list[dict[str, Any]],
     min_word_count: int = 6,
@@ -83,6 +117,7 @@ def normalize_reviews(
         stats["input_rows"] += 1
         body = str(raw.get("body") or "").strip()
         title = str(raw.get("title") or "").strip()
+        platform = str(raw.get("platform", "google_play"))
 
         if is_emoji_only(body):
             stats["dropped_emoji_only"] += 1
@@ -94,6 +129,10 @@ def normalize_reviews(
 
         if not is_english(body):
             stats["dropped_non_english"] += 1
+            continue
+
+        if platform in TAXONOMY_FILTERED_PLATFORMS and not is_taxonomy_relevant(body):
+            stats["dropped_not_taxonomy_relevant"] += 1
             continue
 
         body = scrub_pii(body)
