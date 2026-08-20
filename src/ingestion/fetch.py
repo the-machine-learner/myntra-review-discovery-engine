@@ -4,60 +4,27 @@ import os
 import json
 import logging
 import hashlib
-import re
-import html
-import urllib.parse
-import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from collections import Counter
 from typing import Any
 
 import requests
-import urllib3
 from google_play_scraper import Sort, reviews as play_reviews
 from google_play_scraper.exceptions import NotFoundError
 
-from src.config import PACKAGE_NAME, APP_STORE_ID, RAW_DIR, SERPAPI_API_KEY
+from src.config import (
+    PACKAGE_NAME,
+    APP_STORE_ID,
+    RAW_DIR,
+    SERPAPI_API_KEY,
+    APIFY_API_TOKEN,
+    APIFY_REDDIT_ACTOR_ID,
+    APIFY_MAX_POSTS_PER_QUERY,
+    APIFY_MAX_COMMENTS_PER_POST,
+)
 
 logger = logging.getLogger(__name__)
 
-# Suppress insecure request warnings for proxy verification
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# Standard browser headers
-BROWSER_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Connection': 'keep-alive'
-}
-
-USER_AGENTS = [
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-]
-
-def _get_fresh_reddit_session() -> tuple[requests.Session, dict[str, str]]:
-    import random
-    session = requests.Session()
-    ua = random.choice(USER_AGENTS)
-    headers = {
-        'User-Agent': ua,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
-        'Cache-Control': 'max-age=0'
-    }
-    return session, headers
 
 def _ensure_utc(dt: datetime) -> datetime:
     if dt.tzinfo is None:
@@ -328,15 +295,42 @@ def fetch_reddit(lookback_weeks: int) -> list[dict[str, Any]]:
     client_secret = os.getenv("REDDIT_CLIENT_SECRET", "")
     
     queries = [
-        "myntra refund OR open box",
-        "myntra category OR discover OR options",
-        "myntra beauty OR cosmetic OR personal care",
-        "myntra pet food OR cat OR dog",
-        "myntra baby OR diapers OR toys",
-        "myntra vs blinkit OR instamart"
+        # Why do users wishlist at all? (generic, not platform-anchored — people
+        # rarely phrase this as a "myntra" search, it's a shopping-behavior post).
+        # Short, Reddit-title-style phrasing — full-sentence queries were tested
+        # and confirmed to underperform (Reddit search is keyword, not semantic).
+        "myntra wishlist",
+        "clothes wishlist",
+        "saved items never buy",
+        # What prevents a purchase / abandonment
+        "abandoned cart",
+        "buying from wishlist",
+        # Uncertainty + postponing
+        "should i buy this now",
+        "myntra wait for sale",
+        # Comparing multiple shortlisted products
+        "which one should i buy",
+        "can't decide outfit",
+        # External validation-seeking (outside Myntra/Ajio)
+        "rate my outfit",
+        # Fit/size uncertainty
+        "myntra size chart wrong",
+        "myntra true to size",
+        # Stock/variant availability friction
+        "myntra size out of stock",
+        "myntra color unavailable",
+        # Trust/review-credibility
+        "myntra fake reviews",
+        "myntra scam",
+        # Genuine intent vs. bookmarking + unmet needs
+        "myntra wishlist saving for later",
+        "myntra wish they had",
+        "what i ordered vs what i got",
+        "returned it the next day",
+        "wishlist limit",
     ]
-    
-    # Strategy 1: PRAW (Preferred)
+
+    # Strategy 1: PRAW (Preferred — official Reddit API, needs credentials)
     if client_id and client_secret:
         logger.info("Reddit Strategy 1: Attempting PRAW scraper with targeted queries")
         try:
@@ -377,269 +371,19 @@ def fetch_reddit(lookback_weeks: int) -> list[dict[str, Any]]:
             if collected:
                 return collected
         except Exception as e:
-            logger.warning("Reddit PRAW scraper failed: %s. Trying legacy JSON/RSS.", e)
+            logger.warning("Reddit PRAW scraper failed: %s. Trying Apify fallback.", e)
 
-    # Strategy 2: SerpApi Google Reddit Search (Preferred key-free Reddit search)
-    if SERPAPI_API_KEY:
-        logger.info("Reddit Strategy 2: Attempting SerpApi Google Search for Reddit threads")
+    # Strategy 2: Apify Reddit scraper (no Reddit login/API key needed)
+    if APIFY_API_TOKEN:
+        logger.info("Reddit Strategy 2: Attempting Apify Reddit scraper")
         try:
-            import time
-            import random
-            serp_collected = []
-            
-            # We run 2 comprehensive queries to discover threads
-            search_queries = [
-                "site:reddit.com myntra app review OR feedback",
-                "site:reddit.com myntra refund OR open box OTP OR fraud OR scam OR vs blinkit OR instamart"
-            ]
-            
-            for sq in search_queries:
-                params = {
-                    "engine": "google",
-                    "q": sq,
-                    "api_key": SERPAPI_API_KEY,
-                    "num": 20
-                }
-                logger.info("Querying SerpApi Google Search: %s", sq)
-                response = requests.get("https://serpapi.com/search", params=params, timeout=15)
-                if response.status_code != 200:
-                    logger.warning("SerpApi Google Search failed with status %s", response.status_code)
-                    continue
-                    
-                data = response.json()
-                results = data.get("organic_results", [])
-                logger.info("SerpApi found %s search results for query", len(results))
-                
-                for res in results:
-                    link = res.get("link", "")
-                    title = res.get("title", "Reddit Thread")
-                    snippet = res.get("snippet", "").strip()
-                    
-                    if not link or "reddit.com" not in link:
-                        continue
-                        
-                    # Extract post ID from link
-                    post_id_match = re.search(r'/comments/([^/]+)/', link)
-                    post_id = post_id_match.group(1) if post_id_match else _generate_id(link)
-                    
-                    if post_id in seen_post_ids:
-                        continue
-                    seen_post_ids.add(post_id)
-                    
-                    # Convert to RSS URL
-                    thread_rss_url = link.split('?')[0].rstrip('/') + "/.rss"
-                    
-                    # Try to fetch RSS comments
-                    rss_success = False
-                    try:
-                        # Sleep to respect WAF
-                        time.sleep(random.uniform(2.0, 3.5))
-                        session, headers = _get_fresh_reddit_session()
-                        c_resp = session.get(thread_rss_url, headers=headers, timeout=6, verify=False)
-                        if c_resp.status_code == 200:
-                            root = ET.fromstring(c_resp.content)
-                            ns = {'atom': 'http://www.w3.org/2005/Atom'}
-                            entries = root.findall('atom:entry', ns)
-                            
-                            if entries:
-                                # The first entry is the main post
-                                op_entry = entries[0]
-                                raw_content = op_entry.find('atom:content', ns).text or ""
-                                clean_body = re.sub(r'<[^>]+>', '', html.unescape(raw_content))
-                                
-                                post_data = {
-                                    "id": post_id,
-                                    "title": title,
-                                    "subreddit": "all",
-                                    "selftext": clean_body if clean_body else snippet,
-                                    "score": 5,
-                                    "created_utc": datetime.now().timestamp(),
-                                    "comments": []
-                                }
-                                
-                                # Subsequent entries are comments
-                                for c_entry in entries[1:8]:
-                                    c_author = c_entry.find('atom:author/atom:name', ns)
-                                    c_content = c_entry.find('atom:content', ns)
-                                    if c_content is not None and c_content.text:
-                                        c_body = re.sub(r'<[^>]+>', '', html.unescape(c_content.text))
-                                        post_data["comments"].append({
-                                            "author": c_author.text if c_author is not None else "anonymous",
-                                            "body": c_body,
-                                            "score": 2,
-                                            "created_utc": datetime.now().timestamp()
-                                        })
-                                
-                                parsed = _parse_reddit_post_dict(post_data, cutoff)
-                                serp_collected.extend(parsed)
-                                rss_success = True
-                                logger.info("Successfully fetched thread RSS for %s (extracted %s items)", post_id, len(parsed))
-                            else:
-                                logger.warning("Empty RSS entries list for %s", post_id)
-                        else:
-                            logger.info("RSS fetch returned HTTP %s for %s. Falling back to snippet.", c_resp.status_code, post_id)
-                    except Exception as rss_err:
-                        logger.debug("Failed to fetch/parse RSS for thread %s: %s", post_id, rss_err)
-                        
-                    if not rss_success and len(snippet) > 20:
-                        # Fallback: Add Google Search Snippet directly as OP Post
-                        post_data = {
-                            "id": post_id,
-                            "title": title,
-                            "subreddit": "all",
-                            "selftext": snippet,
-                            "score": 3,
-                            "created_utc": datetime.now().timestamp(),
-                            "comments": []
-                        }
-                        parsed = _parse_reddit_post_dict(post_data, cutoff)
-                        serp_collected.extend(parsed)
-                        logger.info("Added snippet fallback for %s", post_id)
-                        
-            if serp_collected:
-                logger.info("SerpApi Reddit search completed. Flattened items: %s", len(serp_collected))
-                return serp_collected
-                
-        except Exception as serp_err:
-            logger.warning("SerpApi Google Search Strategy failed: %s. Trying legacy JSON/RSS.", serp_err)
+            apify_collected = fetch_reddit_via_apify(lookback_weeks, queries)
+            logger.info("Apify Reddit fetch completed. Flattened items: %s", len(apify_collected))
+            if apify_collected:
+                return apify_collected
+        except Exception as e:
+            logger.warning("Apify Reddit scraper failed: %s. Falling back to local raw file.", e)
 
-    # Strategy 3: Public JSON Fallback
-    logger.info("Reddit Strategy 2: Attempting Public JSON scraper with targeted queries using browser session rotation")
-    try:
-        import time
-        import random
-        json_collected = []
-        for q in queries:
-            session, headers = _get_fresh_reddit_session()
-            escaped_q = urllib.parse.quote(q)
-            url = f"https://www.reddit.com/search.json?q={escaped_q}&sort=new&limit=5"
-            response = session.get(url, headers=headers, timeout=10, verify=False)
-            if response.status_code == 200:
-                data = response.json()
-                posts = data.get("data", {}).get("children", [])
-                for post_wrapper in posts:
-                    post = post_wrapper.get("data", {})
-                    if post["id"] in seen_post_ids:
-                        continue
-                    seen_post_ids.add(post["id"])
-                    
-                    post_data = {
-                        "id": post["id"],
-                        "title": post["title"],
-                        "subreddit": post.get("subreddit", "india"),
-                        "selftext": post.get("selftext", ""),
-                        "score": post.get("score", 0),
-                        "created_utc": post.get("created_utc", datetime.now().timestamp()),
-                        "comments": []
-                    }
-                    comment_url = f"https://www.reddit.com{post['permalink']}.json?limit=5"
-                    try:
-                        c_session, c_headers = _get_fresh_reddit_session()
-                        c_resp = c_session.get(comment_url, headers=c_headers, timeout=5, verify=False)
-                        if c_resp.status_code == 200:
-                            c_data = c_resp.json()
-                            comments_list = c_data[1].get("data", {}).get("children", [])
-                            for c_wrapper in comments_list:
-                                c = c_wrapper.get("data", {})
-                                if c.get("body"):
-                                    post_data["comments"].append({
-                                        "author": c.get("author", "anonymous"),
-                                        "body": c.get("body", ""),
-                                        "score": c.get("score", 0),
-                                        "created_utc": c.get("created_utc", post["created_utc"])
-                                    })
-                    except Exception as c_err:
-                        logger.debug("Failed to fetch comments for thread %s: %s", post["id"], c_err)
-                    
-                    json_collected.extend(_parse_reddit_post_dict(post_data, cutoff))
-            else:
-                logger.warning("Reddit Public JSON returned status %s for query %s", response.status_code, q)
-            # Sleep between queries to avoid rate limits (respect WAF)
-            time.sleep(random.uniform(1.5, 3.5))
-            
-        if json_collected:
-            logger.info("Reddit Public JSON fetch completed. Flattened items: %s", len(json_collected))
-            return json_collected
-    except Exception as e:
-        logger.warning("Reddit Public JSON failed: %s. Trying Public RSS/Atom.", e)
-
-    # Strategy 3: Public RSS / Atom Fallback
-    logger.info("Reddit Strategy 3: Attempting Public RSS/Atom scraper with targeted queries using browser session rotation")
-    try:
-        import time
-        import random
-        rss_collected = []
-        for q in queries:
-            session, headers = _get_fresh_reddit_session()
-            escaped_q = urllib.parse.quote(q)
-            url = f"https://www.reddit.com/search.rss?q={escaped_q}&sort=new"
-            response = session.get(url, headers=headers, timeout=10, verify=False)
-            
-            if response.status_code == 200:
-                root = ET.fromstring(response.content)
-                ns = {'atom': 'http://www.w3.org/2005/Atom'}
-                entries = root.findall('atom:entry', ns)
-                
-                for entry in entries:
-                    post_id_match = re.search(r'/comments/([^/]+)/', entry.find('atom:link', ns).attrib.get('href', ''))
-                    post_id = post_id_match.group(1) if post_id_match else _generate_id(entry.find('atom:title', ns).text)
-                    
-                    if post_id in seen_post_ids:
-                        continue
-                    seen_post_ids.add(post_id)
-                    
-                    title = entry.find('atom:title', ns).text or "Reddit Post"
-                    author = entry.find('atom:author/atom:name', ns)
-                    author_name = author.text if author is not None else "anonymous"
-                    
-                    raw_content = entry.find('atom:content', ns).text or ""
-                    clean_body = re.sub(r'<[^>]+>', '', html.unescape(raw_content))
-                    
-                    post_data = {
-                        "id": post_id,
-                        "title": title,
-                        "subreddit": "all",
-                        "selftext": clean_body,
-                        "score": 5,
-                        "created_utc": datetime.now().timestamp(),
-                        "comments": []
-                    }
-                    
-                    thread_link = entry.find('atom:link', ns).attrib.get('href')
-                    if thread_link:
-                        thread_rss_url = thread_link.split('?')[0].rstrip('/') + "/.rss"
-                        try:
-                            comment_session, comment_headers = _get_fresh_reddit_session()
-                            c_resp = comment_session.get(thread_rss_url, headers=comment_headers, timeout=5, verify=False)
-                            if c_resp.status_code == 200:
-                                c_root = ET.fromstring(c_resp.content)
-                                c_entries = c_root.findall('atom:entry', ns)
-                                for c_entry in c_entries[1:6]:
-                                    c_author = c_entry.find('atom:author/atom:name', ns)
-                                    c_content = c_entry.find('atom:content', ns)
-                                    if c_content is not None and c_content.text:
-                                        c_body = re.sub(r'<[^>]+>', '', html.unescape(c_content.text))
-                                        post_data["comments"].append({
-                                            "author": c_author.text if c_author is not None else "anonymous",
-                                            "body": c_body,
-                                            "score": 2,
-                                            "created_utc": datetime.now().timestamp()
-                                        })
-                        except Exception as c_err:
-                            logger.debug("Failed to fetch RSS comments for thread %s: %s", post_id, c_err)
-                    
-                    rss_collected.extend(_parse_reddit_post_dict(post_data, cutoff))
-            else:
-                logger.warning("Reddit RSS returned status %s for query %s", response.status_code, q)
-            # Sleep between queries to avoid rate limits (respect WAF)
-            time.sleep(random.uniform(1.5, 3.5))
-            
-        if rss_collected:
-            logger.info("Reddit RSS fetch completed. Flattened items: %s", len(rss_collected))
-            return rss_collected
-    except Exception as e:
-        logger.warning("Reddit RSS scraper failed: %s. Falling back to local raw file.", e)
-        
     # Final Fallback: local raw file
     reddit_path = RAW_DIR / "reddit_posts.json"
     if reddit_path.exists():
@@ -650,8 +394,127 @@ def fetch_reddit(lookback_weeks: int) -> list[dict[str, Any]]:
                     seen_post_ids.add(post_data["id"])
                     collected.extend(_parse_reddit_post_dict(post_data, cutoff))
         logger.info("Loaded %s Reddit items from local snapshot.", len(collected))
-        
+
     return collected
+
+
+def _parse_apify_reddit_item(item: dict[str, Any], cutoff: datetime) -> dict[str, Any] | None:
+    """Map one spry_wholemeal/reddit-scraper dataset item (post or comment) into
+    a review-like dict, matching _parse_reddit_post_dict's shape/conventions.
+
+    Field names confirmed against a real sample API response, not just the
+    Actor's public docs (which were incomplete — e.g. undocumented `record_type`
+    discriminator, and both record types carry a direct `post_id`, so no
+    permalink-parsing is needed). Confirmed fields:
+      post:    record_type, post_id, subreddit, title, text, author, score,
+               is_self, created_utc_iso
+      comment: record_type, post_id, comment_id, subreddit, text, author,
+               score, created_utc_iso
+    """
+    record_type = item.get("record_type")
+    if record_type not in ("post", "comment"):
+        return None
+
+    created_str = item.get("created_utc_iso")
+    try:
+        when = _ensure_utc(datetime.fromisoformat(str(created_str).replace("Z", "+00:00")))
+    except (ValueError, TypeError):
+        when = datetime.now(timezone.utc)
+    if when < cutoff:
+        return None
+
+    body = str(item.get("text") or "").strip()
+    author = item.get("author") or "anonymous"
+    score = item.get("score") or 0
+    subreddit = item.get("subreddit") or "reddit"
+    post_id = item.get("post_id") or _generate_id(item.get("permalink") or body)
+
+    if record_type == "comment":
+        if len(body) <= 15:
+            return None
+        comment_id = item.get("comment_id") or _generate_id(item.get("permalink") or f"{author}{body}")
+        return {
+            "review_id": f"reddit_cmt_{post_id}_{comment_id}",
+            "platform": "reddit",
+            "date": when.date().isoformat(),
+            "rating": 3,  # Neutral base rating — Reddit has no star rating
+            "title": f"Comment by u/{author} in r/{subreddit}",
+            "body": body,
+            "app_version": "",
+            "thumbs_up": int(score),
+            "_parsed_at": when,
+        }
+
+    # Post record
+    if len(body) <= 20:
+        return None
+    if not item.get("is_self", True) and body.startswith("submitted by /u/"):
+        # Auto-generated crosspost/gallery/link-post blurb, not real user content
+        return None
+    title = item.get("title") or ""
+    return {
+        "review_id": f"reddit_post_{post_id}",
+        "platform": "reddit",
+        "date": when.date().isoformat(),
+        "rating": 3,
+        "title": f"[{subreddit}] {title}",
+        "body": body,
+        "app_version": "",
+        "thumbs_up": int(score),
+        "_parsed_at": when,
+    }
+
+
+def fetch_reddit_via_apify(lookback_weeks: int, queries: list[str]) -> list[dict[str, Any]]:
+    """Fetch Reddit posts/comments via the Apify 'reddit-scraper' Actor
+    (spry_wholemeal/reddit-scraper — pay-per-Apify-usage, no monthly rental).
+
+    No Reddit login or API key required. Requires APIFY_API_TOKEN to be set —
+    see .env.example. Costs Apify platform usage per run (compute/proxy/storage
+    against your Apify account balance — see src/config.py caps).
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(weeks=lookback_weeks)
+    if lookback_weeks <= 1:
+        timeframe = "week"
+    elif lookback_weeks <= 4:
+        timeframe = "month"
+    elif lookback_weeks <= 52:
+        timeframe = "year"
+    else:
+        timeframe = "all"
+
+    # Apify's REST API path needs "username~actorName", not the Store's
+    # human-facing "username/actorName" URL format.
+    actor_path = APIFY_REDDIT_ACTOR_ID.replace("/", "~")
+    url = f"https://api.apify.com/v2/acts/{actor_path}/run-sync-get-dataset-items"
+    payload = {
+        "mode": "search",
+        "searchTargets": [{"query": q} for q in queries],
+        "maxPosts": APIFY_MAX_POSTS_PER_QUERY,
+        "sort": "new",
+        "timeframe": timeframe,
+        "includeCommentsMode": "all",
+        "maxTopLevelComments": APIFY_MAX_COMMENTS_PER_POST,
+    }
+
+    response = requests.post(
+        url,
+        params={"token": APIFY_API_TOKEN},
+        json=payload,
+        timeout=120,
+    )
+    response.raise_for_status()
+    items = response.json()
+
+    collected: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    for item in items:
+        parsed = _parse_apify_reddit_item(item, cutoff)
+        if parsed and parsed["review_id"] not in seen_ids:
+            seen_ids.add(parsed["review_id"])
+            collected.append(parsed)
+    return collected
+
 
 # --- 4. X (TWITTER) FETCHER ---
 def fetch_x(lookback_weeks: int) -> list[dict[str, Any]]:
