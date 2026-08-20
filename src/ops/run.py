@@ -35,17 +35,22 @@ def run_refresh_pipeline(
     run_analysis_stage: bool = False,
     analysis_only: bool = False,
     area_ids: list[str] | None = None,
+    sources: list[str] | None = None,
 ) -> int:
     in_path = reviews_path or (PROCESSED_DIR / "normalized_reviews.json")
     out_dir = output_dir or PROCESSED_DIR
 
     if not analysis_only:
         logger.info("=== STAGE 1: Ingestion ===")
-        logger.info("Running ingestion (incremental=%s, lookback_weeks=%d)...", incremental, lookback_weeks)
+        logger.info(
+            "Running ingestion (incremental=%s, lookback_weeks=%d, sources=%s)...",
+            incremental, lookback_weeks, sources or "default",
+        )
         reviews, stats = run_ingestion(
             output_path=in_path,
             lookback_weeks=lookback_weeks,
             incremental=incremental,
+            sources=sources,
         )
         logger.info("Ingestion complete. Total corpus size: %d reviews.", len(reviews))
 
@@ -120,6 +125,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Comma-separated area_ids for the analysis stage (default: MVP 7).",
     )
+    refresh_parser.add_argument(
+        "--sources",
+        type=str,
+        default=None,
+        help="Comma-separated ingestion sources (default: google_play,app_store,x,youtube). "
+        "mouthshut is opt-in — must be named explicitly.",
+    )
     refresh_parser.add_argument("-v", "--verbose", action="store_true")
     return parser
 
@@ -136,12 +148,14 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.subcommand == "refresh":
         area_ids = [a.strip() for a in args.areas.split(",") if a.strip()] if args.areas else None
+        sources = [s.strip() for s in args.sources.split(",") if s.strip()] if args.sources else None
         return run_refresh_pipeline(
             incremental=args.incremental,
             lookback_weeks=args.lookback_weeks,
             run_analysis_stage=args.run_analysis,
             analysis_only=args.analysis_only,
             area_ids=area_ids,
+            sources=sources,
         )
 
     return 0

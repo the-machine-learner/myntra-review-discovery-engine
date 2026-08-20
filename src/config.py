@@ -32,7 +32,13 @@ APP_STORE_ID = int(get_secret("APP_STORE_ID", "907394059"))
 LOOKBACK_WEEKS = int(get_secret("LOOKBACK_WEEKS", "10"))
 MIN_WORD_COUNT = int(get_secret("MIN_WORD_COUNT", "6"))
 
-# MouthShut ingestion (needs Playwright + Chromium — see requirements.txt)
+# MouthShut ingestion (needs Playwright + Chromium — see requirements.txt).
+# Sequential pagination (page 1,2,3,4,5,6...) reliably starts silently
+# repeating already-seen content around page 6 (confirmed via diagnostic
+# testing — still HTTP 200 with 20 reviews, just duplicates, no error).
+# Fetching the same pages in SHUFFLED order reliably avoids this (see
+# fetch_mouthshut() for the full finding) — pages are always requested
+# out of order, never sequentially.
 MOUTHSHUT_PRODUCT_SLUG = get_secret("MOUTHSHUT_PRODUCT_SLUG", "myntra-reviews-925076140")
 MOUTHSHUT_MAX_PAGES = int(get_secret("MOUTHSHUT_MAX_PAGES", "50"))
 

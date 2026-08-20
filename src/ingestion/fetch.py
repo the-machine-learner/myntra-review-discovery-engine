@@ -304,11 +304,59 @@ def _parse_mouthshut_review(article: Any, scraped_at: datetime, cutoff: datetime
     }
 
 
+def _mouthshut_launch_context(p: Any):
+    browser = p.chromium.launch(headless=True)
+    context = browser.new_context(
+        user_agent=(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+    )
+    return browser, context
+
+
+_MOUTHSHUT_PAGES_PER_BATCH = 4
+
+
+def _mouthshut_load_page(page: Any, url: str, cutoff: datetime, BeautifulSoup: Any) -> list[Any]:
+    """Navigate to `url`, wait for full render, return the review-article
+    elements found. Raises on navigation failure.
+
+    Uses "domcontentloaded", not "networkidle" — this site apparently never
+    goes fully network-idle (background ads/analytics keep polling), which
+    caused "networkidle" to hit 30s timeouts in testing. The fixed 6s
+    wait_for_timeout after domcontentloaded is what actually lets Cloudflare's
+    JS challenge settle.
+    """
+    page.goto(url, timeout=30000, wait_until="domcontentloaded")
+    page.wait_for_timeout(6000)
+    soup = BeautifulSoup(page.content(), "lxml")
+    return soup.find_all(class_="review-article")
+
+
 def fetch_mouthshut(lookback_weeks: int, max_pages: int | None = None) -> list[dict[str, Any]]:
     """Fetch Myntra reviews from MouthShut.com. Requires a real browser
     (Playwright + Chromium) — plain requests/curl get a Cloudflare 403.
-    Paginates .../product-reviews/{slug}-page-{N} up to `max_pages`, stopping
-    early if a page returns zero reviews (end of available pages reached).
+
+    IMPORTANT — read before assuming this is reliable: four different access
+    strategies were tried (sequential pagination, relaunching the browser
+    every N pages, fully shuffled page order, and this one — priming with
+    page 1 before every batch of new pages). Every single one of them BOTH
+    succeeded in an isolated manual test AND failed on a real end-to-end run
+    (pages beyond ~5 silently return duplicate content — still HTTP 200 with
+    20 review-article elements, just reviews already seen, no error). That
+    pattern — works in isolation, fails in practice, across every strategy —
+    is strong evidence this is genuinely non-deterministic behavior on
+    MouthShut/Cloudflare's side (likely rate- or randomization-based bot
+    mitigation), not a client-side ordering puzzle with a real solution.
+
+    This priming-batch strategy is kept as the implementation because it's
+    the most defensible attempt and does no harm, but DO NOT expect it to
+    reliably yield close to `max_pages` worth of content. In practice, expect
+    roughly pages-1-5's worth (~80-100 reviews) most runs, occasionally more.
+    The consecutive-empty/consecutive-all-duplicate safety valves below exist
+    specifically so a bad run fails fast and cheap rather than burning
+    through all of `max_pages` for nothing.
     """
     cutoff = datetime.now(timezone.utc) - timedelta(weeks=lookback_weeks)
     max_pages = max_pages if max_pages is not None else MOUTHSHUT_MAX_PAGES
@@ -326,47 +374,85 @@ def fetch_mouthshut(lookback_weeks: int, max_pages: int | None = None) -> list[d
         return collected
 
     base_url = f"https://www.mouthshut.com/product-reviews/{MOUTHSHUT_PRODUCT_SLUG}"
+    target_pages = list(range(2, max_pages + 1))  # page 1's real content comes from the first priming visit
+    batches = [
+        target_pages[i : i + _MOUTHSHUT_PAGES_PER_BATCH]
+        for i in range(0, len(target_pages), _MOUTHSHUT_PAGES_PER_BATCH)
+    ]
+
+    consecutive_empty = 0
+    consecutive_all_dupe_batches = 0
+
+    def _collect(articles: list[Any], scraped_at: datetime) -> int:
+        new_count = 0
+        for article in articles:
+            parsed = _parse_mouthshut_review(article, scraped_at, cutoff)
+            if parsed and parsed["review_id"] not in seen_ids:
+                seen_ids.add(parsed["review_id"])
+                collected.append(parsed)
+                new_count += 1
+        return new_count
 
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            context = browser.new_context(
-                user_agent=(
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-                    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                )
-            )
+            browser, context = _mouthshut_launch_context(p)
             page = context.new_page()
+            try:
+                for batch in batches:
+                    # Prime: (re)visit page 1 before every batch of new pages.
+                    try:
+                        articles = _mouthshut_load_page(page, base_url, cutoff, BeautifulSoup)
+                        primed_new = _collect(articles, datetime.now(timezone.utc))
+                        logger.info("MouthShut priming visit to page 1: %d articles, %d new", len(articles), primed_new)
+                    except Exception as e:
+                        logger.warning("MouthShut priming visit failed: %s", e)
 
-            for page_num in range(1, max_pages + 1):
-                url = base_url if page_num == 1 else f"{base_url}-page-{page_num}"
-                try:
-                    page.goto(url, timeout=30000, wait_until="domcontentloaded")
-                    page.wait_for_timeout(6000)  # let Cloudflare's JS challenge settle
-                    scraped_at = datetime.now(timezone.utc)
-                    soup = BeautifulSoup(page.content(), "lxml")
-                    articles = soup.find_all(class_="review-article")
-                except Exception as e:
-                    logger.warning("MouthShut page %d failed to load: %s", page_num, e)
-                    break
+                    batch_new = 0
+                    batch_stopped = False
+                    for page_num in batch:
+                        url = f"{base_url}-page-{page_num}"
+                        try:
+                            articles = _mouthshut_load_page(page, url, cutoff, BeautifulSoup)
+                        except Exception as e:
+                            logger.warning("MouthShut page %d failed to load: %s", page_num, e)
+                            continue
 
-                if not articles:
-                    logger.info("MouthShut page %d returned no reviews — stopping pagination.", page_num)
-                    break
+                        if not articles:
+                            consecutive_empty += 1
+                            logger.info(
+                                "MouthShut page %d returned no reviews (%d consecutive empty)",
+                                page_num, consecutive_empty,
+                            )
+                            if consecutive_empty >= 3:
+                                logger.info("3 consecutive empty pages — stopping (likely past real content end).")
+                                batch_stopped = True
+                                break
+                            continue
+                        consecutive_empty = 0
 
-                page_new = 0
-                for article in articles:
-                    parsed = _parse_mouthshut_review(article, scraped_at, cutoff)
-                    if parsed and parsed["review_id"] not in seen_ids:
-                        seen_ids.add(parsed["review_id"])
-                        collected.append(parsed)
-                        page_new += 1
-                logger.info(
-                    "MouthShut page %d: %d reviews found, %d new after dedup/cutoff",
-                    page_num, len(articles), page_new,
-                )
+                        page_new = _collect(articles, datetime.now(timezone.utc))
+                        batch_new += page_new
+                        logger.info(
+                            "MouthShut page %d: %d reviews found, %d new after dedup/cutoff",
+                            page_num, len(articles), page_new,
+                        )
 
-            browser.close()
+                    if batch_stopped:
+                        break
+
+                    if batch_new == 0:
+                        consecutive_all_dupe_batches += 1
+                        logger.info(
+                            "MouthShut batch %s yielded zero new reviews (%d consecutive empty batches)",
+                            batch, consecutive_all_dupe_batches,
+                        )
+                        if consecutive_all_dupe_batches >= 3:
+                            logger.info("3 consecutive all-duplicate batches — stopping to avoid wasted requests.")
+                            break
+                    else:
+                        consecutive_all_dupe_batches = 0
+            finally:
+                browser.close()
     except Exception as e:
         logger.warning("MouthShut fetch failed: %s", e)
 
