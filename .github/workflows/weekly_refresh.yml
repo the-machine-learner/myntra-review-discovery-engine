@@ -1,16 +1,7 @@
 name: Weekly review refresh
 
 on:
-  workflow_dispatch:
-    inputs:
-      simulated_analysis:
-        description: "Run simulated analysis pipeline stage (~30s delay + logs response returned) without spending tokens or altering existing scores."
-        required: false
-        default: "true"
-      use_groq:
-        description: "Use real Groq API for richer theme analysis (SPENDS TOKENS)."
-        required: false
-        default: "false"
+  workflow_dispatch: {}
   schedule:
     - cron: "0 6 * * 1"  # Mondays 06:00 UTC
 
@@ -36,21 +27,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Refresh pipeline (ingest -> embed -> Groq analysis)
+      - name: Refresh pipeline (ingest -> embed -> analysis)
         env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           EMBEDDING_BACKEND: local
-          USE_GROQ: ${{ github.event.inputs.use_groq || 'false' }}
-          SIMULATED_ANALYSIS: ${{ github.event.inputs.simulated_analysis || 'true' }}
         run: |
           set -e
-          if [ "${USE_GROQ}" = "true" ]; then
-            echo "Running incremental refresh with Groq analysis stage..."
-            python -m src.ops.run refresh --incremental --run-analysis
-          else
-            echo "Running incremental refresh with analysis pipeline stage..."
-            python -m src.ops.run refresh --incremental --simulated-analysis
-          fi
+          echo "Running incremental refresh with analysis pipeline stage..."
+          python -m src.ops.run refresh --incremental --simulated-analysis
 
       - name: Smoke test
         continue-on-error: true
