@@ -84,12 +84,12 @@ def _load_data():
 def trigger_github_action() -> tuple[bool, str]:
     """Trigger the weekly_refresh.yml workflow on GitHub via REST API."""
     import requests
-    token = get_secret("GITHUB_TOKEN") or os.getenv("GITHUB_TOKEN") or os.getenv("GH_PAT")
+    token = get_secret("GITHUB_TOKEN") or get_secret("GH_PAT")
     if not token:
         return False, "GITHUB_TOKEN not found in secrets."
 
-    owner = "the-machine-learner"
-    repo = "myntra-review-discovery-engine"
+    owner = get_secret("GITHUB_OWNER", "the-machine-learner")
+    repo = get_secret("GITHUB_REPO", "myntra-review-discovery-engine")
     workflow_id = "weekly_refresh.yml"
     url = f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches"
 
