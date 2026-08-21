@@ -1,20 +1,16 @@
 {
-  "run_id": "20260820T151518Z",
+  "run_id": "20260821T053507Z",
   "prompt_version": "wishlist_v1",
-  "model_id": "llama-3.3-70b-versatile",
-  "corpus_size_at_run": 270,
+  "model_id": "openai/gpt-oss-120b",
+  "corpus_size_at_run": 11055,
   "area_ids": [
-    "size_fit_uncertainty",
-    "comparison_paralysis",
-    "external_validation_seeking",
-    "wishlist_bookmark_no_intent",
-    "styling_occasion_uncertainty",
-    "stock_size_availability_friction",
-    "wishlist_price_watch"
+    "trust_review_credibility_gap"
   ],
-  "groq_call_count": 0,
-  "estimated_tokens_used": 0,
-  "per_area_sample_sizes": {},
+  "groq_call_count": 3,
+  "estimated_tokens_used": 9691,
+  "per_area_sample_sizes": {
+    "trust_review_credibility_gap": 40
+  },
   "validation_ok": true,
   "validation_errors": []
 }

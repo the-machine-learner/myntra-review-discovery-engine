@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from src.config import ANALYSIS_BATCH_SIZE
+from src.config import ANALYSIS_BATCH_SIZE, ANALYSIS_PROMPT_VERSION
 from src.ingestion.schema import NormalizedReview
 from src.analysis.taxonomy import OpportunityArea
 from src.analysis.groq_client import AnalysisGroqClient, BudgetExhaustedError
@@ -53,9 +53,21 @@ def synthesize_area(
     sample: list[NormalizedReview],
     batch_size: int = ANALYSIS_BATCH_SIZE,
     cache: dict[str, dict[str, Any]] | None = None,
+    reviews_by_id: dict[str, NormalizedReview] | None = None,
 ) -> dict[str, Any]:
     """Run the two-stage LLM synthesis (batched relevance/severity/quote
     tagging, then one merge call) for one opportunity area.
+
+    `sample` is only what THIS run tags (fresh, budget-bounded). The final
+    synthesis/quotes are built from the FULL accumulated cache for this area
+    across ALL runs (filtered to the current ANALYSIS_PROMPT_VERSION) — not
+    just this run's sample. This matters because the sampler's novelty bonus
+    deliberately shifts which reviews get sampled run to run to expand
+    coverage over time; without this, a genuinely-confirmed finding from an
+    earlier run would silently vanish the moment a later run's sample
+    composition drifted away from it. `reviews_by_id` should cover the full
+    corpus (not just `sample`) so a cache hit from a past run's sample can
+    still be resolved to its review object for quote/date/platform display.
 
     Returns a dict with llm_synthesis, top_quotes, llm_avg_severity,
     llm_sample_n, llm_relevant_n.
@@ -103,6 +115,17 @@ def synthesize_area(
             tag_result = result.get(review.review_id)
             if not isinstance(tag_result, dict):
                 continue
+            # Enforce "verbatim substring only" at the source, not just at
+            # final validation. A real run produced a quote that spliced two
+            # non-adjacent sentences from one review together — each half was
+            # real text, but concatenated it wasn't an actual substring, so
+            # validate_opportunity_synthesis correctly flagged it downstream.
+            # Null the quote here instead (keep relevant/severity, which are
+            # independently plausible) so a spliced/paraphrased quote never
+            # gets cached or shown as if it were a real customer excerpt.
+            quote = tag_result.get("quote")
+            if quote and quote not in review.body:
+                tag_result = {**tag_result, "quote": None}
             tagged[review.review_id] = tag_result
             tag_cache.record_llm_tag(
                 review, area.area_id, tag_result, rule_tags=[area.area_id], cache=cache
@@ -110,17 +133,25 @@ def synthesize_area(
 
     tag_cache.save_cache(cache)
 
-    reviews_by_id = {r.review_id: r for r in sample}
-    relevant_entries = [
-        (rid, t) for rid, t in tagged.items() if t.get("relevant") and rid in reviews_by_id
+    reviews_by_id = reviews_by_id if reviews_by_id is not None else {r.review_id: r for r in sample}
+
+    # Build from the FULL cache for this area + current prompt version, not
+    # just this run's `tagged` dict — see docstring for why.
+    all_area_entries = [
+        (rid, entry["llm_tags"][area.area_id])
+        for rid, entry in cache.items()
+        if area.area_id in entry.get("llm_tags", {})
+        and entry.get("prompt_version") == ANALYSIS_PROMPT_VERSION
+        and rid in reviews_by_id
     ]
+    relevant_entries = [(rid, t) for rid, t in all_area_entries if t.get("relevant")]
 
     if not relevant_entries:
         return {
             "llm_synthesis": "",
             "top_quotes": [],
             "llm_avg_severity": 0.0,
-            "llm_sample_n": len(sample),
+            "llm_sample_n": len(all_area_entries),
             "llm_relevant_n": 0,
         }
 
@@ -164,6 +195,6 @@ def synthesize_area(
         "llm_synthesis": synthesis_text,
         "top_quotes": top_quotes[:3],
         "llm_avg_severity": round(avg_severity, 2),
-        "llm_sample_n": len(sample),
+        "llm_sample_n": len(all_area_entries),
         "llm_relevant_n": len(relevant_entries),
     }

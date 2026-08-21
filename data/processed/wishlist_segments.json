@@ -1,0 +1,127 @@
+{
+  "run_metadata": {
+    "run_id": "20260821T011207Z",
+    "prompt_version": "wishlist_v1",
+    "candidate_pool_size": 73,
+    "total_classified": 58,
+    "groq_call_count": 4,
+    "estimated_tokens_used": 16355
+  },
+  "segments": [
+    {
+      "segment_id": "unclear",
+      "label": "Unclear / Insufficient Signal",
+      "description": "Mentions wishlist-adjacent behavior but the review doesn't give enough to confidently place it in one of the above.",
+      "count": 52,
+      "pct_of_classified": 89.7,
+      "quotes": [
+        {
+          "review_id": "397ad3e9-6998-48aa-a789-ed2c449db1e1",
+          "text": "what happened with you Myntra! What's wrong with your customer support!!! I ordered on 9th August and it's supposed to delivered on 14th of August but it get delayed which I can understand but then I don't have any update that when it will be delivered!let me know if you would li",
+          "rating": 1,
+          "platform": "google_play",
+          "date": "2026-08-19"
+        },
+        {
+          "review_id": "ff56ebec-8fb2-4bad-a560-f0c0507cba02",
+          "text": "Pathetic service and worst customer support experience! I ordered a watch (French Connection) well in advance as a special birthday gift for my wife, which was supposed to be delivered by August 9. However, it got delayed indefinitely. When I contacted customer support, the AI ch",
+          "rating": 1,
+          "platform": "google_play",
+          "date": "2026-08-19"
+        },
+        {
+          "review_id": "46ffb992-6320-4110-82cc-37e060f2fb8d",
+          "text": "placed an order of luxury bag. first they failed to deliver it on given date. when reached to customer support literally zero support was provided. next they I saw myntra falsely marked that they attempted to deliver it and it failed. when I tried reaching out to delivery agent e",
+          "rating": 1,
+          "platform": "google_play",
+          "date": "2026-08-18"
+        }
+      ]
+    },
+    {
+      "segment_id": "price_watch",
+      "label": "Price-Drop Watch",
+      "description": "Wishlisted specifically to monitor for a price drop or sale before buying.",
+      "count": 3,
+      "pct_of_classified": 5.2,
+      "quotes": [
+        {
+          "review_id": "ffaed538-a0e9-4bf6-99b9-563a4692de0c",
+          "text": "prices get increased after adding the product to the wishlist specially for the luxury brands.",
+          "rating": 1,
+          "platform": "google_play",
+          "date": "2026-08-10"
+        },
+        {
+          "review_id": "639b13bb-e186-412a-bbd6-40ea961dc7aa",
+          "text": "I love to shop from myntra because it gives me good offers and myntra cash and I get my wishlist products in reasonable price ❤️",
+          "rating": 5,
+          "platform": "google_play",
+          "date": "2026-08-06"
+        },
+        {
+          "review_id": "663b11d8-a54e-41b2-aca0-1446e9ce5a67",
+          "text": "if i put anything on wishlist today the next day price of the product will increase",
+          "rating": 1,
+          "platform": "google_play",
+          "date": "2026-08-05"
+        }
+      ]
+    },
+    {
+      "segment_id": "genuine_purchase_intent",
+      "label": "Genuine Purchase Intent",
+      "description": "Wishlisted an item and did, or clearly intends to, actually buy it soon — an active shortlist, not a passive save.",
+      "count": 2,
+      "pct_of_classified": 3.4,
+      "quotes": [
+        {
+          "review_id": "18c52668-fade-46a0-9aeb-b67bec724a84",
+          "text": "fast and comfortable delivery, arrived order is exactly on wishlist",
+          "rating": 5,
+          "platform": "google_play",
+          "date": "2026-07-22"
+        },
+        {
+          "review_id": "507ce767-900a-4ba4-b6e1-6749fa1c2ff3",
+          "text": "What happened to Myntras wishlist category? it save a lott of time. sometimes I only open wishlist products, do quick search and order. please bring it back",
+          "rating": 1,
+          "platform": "google_play",
+          "date": "2026-07-19"
+        }
+      ]
+    },
+    {
+      "segment_id": "bookmark_no_intent",
+      "label": "Bookmark, Not Intent",
+      "description": "Treats the wishlist as a passive save/junk-drawer — items saved and forgotten, no active plan to purchase.",
+      "count": 1,
+      "pct_of_classified": 1.7,
+      "quotes": [
+        {
+          "review_id": "c03d949d-6061-48db-b6bc-e0f85d2d62da",
+          "text": "Everything on Myntra is great, but the wishlist has a limit. Please remove the wishlist limit.",
+          "rating": 4,
+          "platform": "google_play",
+          "date": "2026-07-20"
+        }
+      ]
+    },
+    {
+      "segment_id": "gift",
+      "label": "Gift List",
+      "description": "Item saved for a future gifting occasion, not near-term self-purchase.",
+      "count": 0,
+      "pct_of_classified": 0.0,
+      "quotes": []
+    },
+    {
+      "segment_id": "inspiration_board",
+      "label": "Inspiration Board",
+      "description": "Wishlist used as a mood/style reference, not necessarily to buy the exact saved item.",
+      "count": 0,
+      "pct_of_classified": 0.0,
+      "quotes": []
+    }
+  ]
+}

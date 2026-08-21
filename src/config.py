@@ -50,7 +50,7 @@ EMBED_BATCH_SIZE = int(get_secret("EMBED_BATCH_SIZE", "128"))
 EMBED_BATCH_SLEEP_S = float(get_secret("EMBED_BATCH_SLEEP_S", "1.0"))
 
 # LLM Chat Model configuration
-GROQ_CHAT_MODEL = get_secret("GROQ_CHAT_MODEL", "openai/gpt-oss-20b")
+GROQ_CHAT_MODEL = get_secret("GROQ_CHAT_MODEL", "openai/gpt-oss-120b")
 ANALYSIS_SAMPLE_CAP = int(get_secret("ANALYSIS_SAMPLE_CAP", "450"))
 UNMET_NEEDS_SAMPLE_CAP = int(get_secret("UNMET_NEEDS_SAMPLE_CAP", "300"))
 ANALYSIS_BATCH_SIZE = int(get_secret("ANALYSIS_BATCH_SIZE", "20"))
@@ -68,18 +68,26 @@ USE_GROQ_SEGMENTATION = str(get_secret("USE_GROQ_SEGMENTATION", "false")).lower(
 SERPAPI_API_KEY = get_secret("SERPAPI_API_KEY", "")
 GROQ_API_KEY = get_secret("GROQ_API_KEY", "")
 
-# Groq free-tier throttle — conservative defaults; llama-3.3-70b-versatile was
-# removed from Groq's lineup entirely (confirmed via live API — 404
-# model_not_found), replaced with openai/gpt-oss-20b above. Verify current
-# RPM/TPM limits for your actual model against your Groq console; these
-# numbers are a safe conservative baseline, not verified per-model.
+# Groq free-tier throttle. llama-3.3-70b-versatile was removed from Groq's
+# lineup entirely (confirmed via live API — 404 model_not_found). Switched
+# from openai/gpt-oss-20b to openai/gpt-oss-120b (2026-08-21) after gpt-oss-20b
+# hit its real daily token ceiling and started returning escalating 429s
+# (264s -> 432s Retry-After) — 120b has an identical, but separate, quota
+# bucket, confirmed fresh via a live test call. All limits below confirmed
+# directly against the Groq console's "Current Limits" page for this account
+# (both openai/gpt-oss-20b and openai/gpt-oss-120b show identical numbers):
+# 30 RPM / 1K RPD / 8K TPM / 200K TPD. Re-check the console if you change
+# GROQ_CHAT_MODEL, since limits vary per model (e.g. allam-2-7b: 500K TPD).
 GROQ_RPM_LIMIT = int(get_secret("GROQ_RPM_LIMIT", "28"))
-GROQ_TPM_LIMIT = int(get_secret("GROQ_TPM_LIMIT", "11000"))
+GROQ_TPM_LIMIT = int(get_secret("GROQ_TPM_LIMIT", "7000"))
 GROQ_THROTTLE = str(get_secret("GROQ_THROTTLE", "true")).lower() == "true"
 
-# Shared batch+live daily budget (placeholders — confirm against your Groq console)
+# Shared batch+live daily budget. GROQ_TPD_LIMIT was 500000 (a placeholder
+# guess) — the real console value is 200000. Being 2.5x too generous meant
+# our OWN budget tracker never stopped a run before Groq's real server-side
+# daily ceiling did, which is what caused the escalating-429 incident above.
 GROQ_RPD_LIMIT = int(get_secret("GROQ_RPD_LIMIT", "1000"))
-GROQ_TPD_LIMIT = int(get_secret("GROQ_TPD_LIMIT", "500000"))
+GROQ_TPD_LIMIT = int(get_secret("GROQ_TPD_LIMIT", "200000"))
 GROQ_LIVE_CHAT_RESERVED_PCT = float(get_secret("GROQ_LIVE_CHAT_RESERVED_PCT", "0.25"))
 GROQ_BUDGET_STATE_FILE = get_secret("GROQ_BUDGET_STATE_FILE", "groq_budget_state.json")
 

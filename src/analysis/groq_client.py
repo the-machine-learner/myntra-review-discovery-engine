@@ -117,16 +117,32 @@ class AnalysisGroqClient:
         except (TypeError, ValueError):
             return None
 
-    def chat_json(self, system: str, user: str, max_retries: int = 8) -> Any:
-        from groq import RateLimitError
-        estimated = self._estimate_tokens(system + user) + 512
+    _DAILY_CEILING_REASONS = {"daily_call_ceiling_reached", "daily_token_ceiling_reached"}
 
-        decision = budget.check_budget(estimated, caller="batch")
-        if not decision.ok:
-            raise BudgetExhaustedError(f"Shared Groq budget exhausted: {decision.reason}")
+    def chat_json(self, system: str, user: str, max_retries: int = 8) -> Any:
+        from groq import RateLimitError, BadRequestError
+        estimated = self._estimate_tokens(system + user) + 512
 
         for attempt in range(max_retries):
             try:
+                # Budget check lives inside the retry loop: RPM/TPM denials are
+                # transient (the minute window clears on its own) and should
+                # just wait-and-retry, exactly like _wait_for_quota's own
+                # pacing. Only a genuine DAILY ceiling — which won't clear
+                # within this run — should abort outright. Getting this wrong
+                # previously caused one real 429 to cascade into every
+                # subsequent area silently giving up.
+                decision = budget.check_budget(estimated, caller="batch")
+                if not decision.ok:
+                    if decision.reason in self._DAILY_CEILING_REASONS:
+                        raise BudgetExhaustedError(f"Shared Groq daily budget exhausted: {decision.reason}")
+                    logger.info(
+                        "Budget check denied (%s, attempt %s/%s); waiting 15s for the window to clear",
+                        decision.reason, attempt + 1, max_retries,
+                    )
+                    time.sleep(15)
+                    continue
+
                 self._wait_for_quota(estimated)
 
                 response = self.client.chat.completions.create(
@@ -155,8 +171,39 @@ class AnalysisGroqClient:
             except RateLimitError as exc:
                 retry_after = self._retry_after_seconds(exc)
                 wait = retry_after if retry_after is not None else max(5.0, self.sleep_s * (2 ** attempt))
+                # Groq's Retry-After header is honored as-is normally, but it can
+                # legitimately report a daily-quota reset time (potentially very
+                # long) rather than a short per-minute cooldown. A real run once
+                # sat silently blocked in a single time.sleep() for 17+ minutes
+                # because of this — cap it so we fail fast and visibly instead of
+                # hanging with zero output. If we're actually daily-limited, the
+                # capped retries will exhaust max_retries and raise, which is a
+                # clear error rather than an indefinite silent stall.
+                _RETRY_AFTER_CAP_S = 60.0
+                if wait > _RETRY_AFTER_CAP_S:
+                    logger.warning(
+                        "Retry-After (%.1fs) exceeds cap; capping to %.0fs and letting retries fail fast if this persists",
+                        wait, _RETRY_AFTER_CAP_S,
+                    )
+                    wait = _RETRY_AFTER_CAP_S
                 logger.warning("Rate limited (attempt %s/%s); sleeping %.1fs", attempt + 1, max_retries, wait)
                 time.sleep(wait)
+            except BadRequestError as exc:
+                # Groq's server-side JSON-mode validator occasionally rejects
+                # the model's own malformed output (code=json_validate_failed).
+                # This is nondeterministic generation, not a bad prompt, so a
+                # plain retry (new sampling draw) has a real chance of
+                # succeeding. Any OTHER 400 (a genuinely bad request) is not
+                # retried — it will fail identically every time.
+                body = getattr(exc, "body", None) or {}
+                code = (body.get("error") or {}).get("code") if isinstance(body, dict) else None
+                if code == "json_validate_failed" and attempt < max_retries - 1:
+                    logger.warning(
+                        "Groq JSON-mode validation failed (attempt %s/%s); retrying", attempt + 1, max_retries
+                    )
+                    time.sleep(2.0)
+                    continue
+                raise
             except json.JSONDecodeError as exc:
                 if attempt == max_retries - 1:
                     raise

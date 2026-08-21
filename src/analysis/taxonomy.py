@@ -62,9 +62,17 @@ _AREAS: tuple[OpportunityArea, ...] = (
             "decide between them."
         ),
         keywords=(
-            "which one should i", "can't decide", "cant decide", "help me choose",
-            "compare", "comparison", "too many options", "which is better",
-            "should i get this or",
+            # Tightened after finding "compare"/"comparison" matched generic
+            # platform gripes ("compared to other platforms delivery is bad")
+            # far more than genuine can't-decide-between-wishlisted-items
+            # behavior (60 false / 2 true in cache before this change). All
+            # phrases now anchor on "decide"/"choose"/"which one" so a bare
+            # mention of comparing services no longer matches.
+            "which one should i buy", "cant decide between", "can't decide between",
+            "cant decide which", "can't decide which", "not sure which one to buy",
+            "unsure which one to choose", "help me choose between", "help me decide between",
+            "too many options to choose from", "confused which one to buy",
+            "choose between these two", "decide between these two",
         ),
         anchor_questions=(
             "How do users compare multiple shortlisted products?",
@@ -102,9 +110,16 @@ _AREAS: tuple[OpportunityArea, ...] = (
             "toward a purchase."
         ),
         keywords=(
-            "just saving", "just browsing", "for later", "saving for later",
-            "someday", "no intention", "forgot", "never bought", "never wore",
-            "things i never", "saved items never buy",
+            # Tightened after finding "forgot"/"no intention" matched
+            # delivery/refund complaints ("no intention to give money back",
+            # "forgot to implement the discounts") — 7 false / 0 true in
+            # cache before this change. Every phrase now anchors on
+            # save/wishlist + never-buy so a bare "forgot" elsewhere in a
+            # review no longer matches.
+            "just saving for later", "just browsing not buying", "wishlist just for looking",
+            "no intention to buy it", "never intended to buy", "add to wishlist and forget",
+            "forgot it was in my wishlist", "wishlist and never buy", "saved but never bought",
+            "things i save but never buy", "wishlist pile up", "just window shopping",
         ),
         anchor_questions=(
             "When is the wishlist genuine purchase intent versus just a bookmark?",
@@ -121,8 +136,17 @@ _AREAS: tuple[OpportunityArea, ...] = (
             "whether it fits the occasion it was intended for."
         ),
         keywords=(
-            "how to style", "pair with", "will it suit", "occasion", "outfit",
-            "what to wear", "styling", "wear this", "goes with",
+            # Tightened after finding "occasion"/"outfit"/"styling" matched
+            # generic app praise ("suggests everything so perfectly and fits
+            # my style") and unrelated order-for-an-occasion mentions — 36
+            # false / 0 true in cache before this change. Every phrase now
+            # requires an explicit uncertainty/negation signal (not sure,
+            # unsure, will it, how do i) so bare fashion vocabulary no
+            # longer matches on its own.
+            "not sure how to style", "unsure how to style", "will it suit me",
+            "not sure if it suits me", "what to wear it with", "how do i style this",
+            "not sure what occasion to wear", "unsure what to pair it with",
+            "how to pair this with", "not sure if this suits my body type",
         ),
         anchor_questions=(
             "What role does styling and occasion play in purchase hesitation?",
@@ -185,7 +209,7 @@ _AREAS: tuple[OpportunityArea, ...] = (
         ),
         anchor_questions=("What causes users to postpone a purchase?",),
         feasible_without_monetary_incentive="no",
-        mvp=False,
+        mvp=True,
     ),
     OpportunityArea(
         area_id="wishlist_gift_list",
@@ -197,7 +221,7 @@ _AREAS: tuple[OpportunityArea, ...] = (
         ),
         anchor_questions=("Why do users add products to their wishlist?",),
         feasible_without_monetary_incentive="yes",
-        mvp=False,
+        mvp=True,
     ),
     OpportunityArea(
         area_id="wishlist_inspiration_board",
@@ -212,7 +236,7 @@ _AREAS: tuple[OpportunityArea, ...] = (
         ),
         anchor_questions=("Why do users add products to their wishlist?",),
         feasible_without_monetary_incentive="yes",
-        mvp=False,
+        mvp=True,
     ),
     OpportunityArea(
         area_id="trust_review_credibility_gap",
@@ -224,7 +248,7 @@ _AREAS: tuple[OpportunityArea, ...] = (
         ),
         anchor_questions=("What uncertainties remain after a user has picked a product?",),
         feasible_without_monetary_incentive="yes",
-        mvp=False,
+        mvp=True,
     ),
     OpportunityArea(
         area_id="quality_material_doubt",
@@ -236,7 +260,7 @@ _AREAS: tuple[OpportunityArea, ...] = (
         ),
         anchor_questions=("What uncertainties remain after a user has picked a product?",),
         feasible_without_monetary_incentive="yes",
-        mvp=False,
+        mvp=True,
     ),
     OpportunityArea(
         area_id="return_exchange_anxiety",
@@ -248,7 +272,7 @@ _AREAS: tuple[OpportunityArea, ...] = (
         ),
         anchor_questions=("What prevents wishlisted products from eventually being purchased?",),
         feasible_without_monetary_incentive="yes",
-        mvp=False,
+        mvp=True,
     ),
     OpportunityArea(
         area_id="delivery_cod_payment_friction",
@@ -260,7 +284,7 @@ _AREAS: tuple[OpportunityArea, ...] = (
         ),
         anchor_questions=("What prevents wishlisted products from eventually being purchased?",),
         feasible_without_monetary_incentive="yes",
-        mvp=False,
+        mvp=True,
     ),
 )
 

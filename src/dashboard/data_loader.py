@@ -18,6 +18,7 @@ from src.dashboard.constants import (
     REVIEWS_FILE,
     OPPORTUNITY_SCORES_FILE,
     OPPORTUNITY_RUN_METADATA_FILE,
+    WISHLIST_SEGMENTS_FILE,
 )
 from src.ingestion.schema import NormalizedReview
 
@@ -28,6 +29,7 @@ class DashboardData:
     reviews_by_id: dict[str, NormalizedReview]
     opportunities: list[dict[str, Any]]
     opportunity_run_metadata: dict[str, Any]
+    wishlist_segments: dict[str, Any]
     load_warnings: list[str] = field(default_factory=list)
 
 
@@ -64,10 +66,15 @@ def load_dashboard_data(artifact_dir: Path | None = None) -> DashboardData:
     if not isinstance(opportunity_run_metadata, dict):
         opportunity_run_metadata = {}
 
+    wishlist_segments = _read_json_safe(artifact_dir / WISHLIST_SEGMENTS_FILE, {}, warnings)
+    if not isinstance(wishlist_segments, dict):
+        wishlist_segments = {}
+
     return DashboardData(
         reviews=reviews,
         reviews_by_id=reviews_by_id,
         opportunities=opportunities,
         opportunity_run_metadata=opportunity_run_metadata,
+        wishlist_segments=wishlist_segments,
         load_warnings=warnings,
     )

@@ -140,7 +140,7 @@ def run_analysis(
             continue
 
         try:
-            result = synthesize_area(client, area, sample, cache=cache)
+            result = synthesize_area(client, area, sample, cache=cache, reviews_by_id=reviews_by_id)
         except BudgetExhaustedError:
             logger.warning("Groq budget exhausted; stopping remaining areas after %s", area_id)
             llm_results[area_id] = {}
@@ -166,9 +166,29 @@ def run_analysis(
 
 
 def save_artifacts(scores: list[OpportunityScore], run_metadata: dict[str, Any]) -> None:
+    """Write opportunity_scores.json, MERGING with any existing areas not
+    included in this run — a partial `--areas` run must only update the
+    areas it actually processed, never silently drop the others. (This was a
+    real bug: the first version overwrote the whole file with only the
+    current run's areas, losing every other area's results.)
+    """
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+
+    existing_by_id: dict[str, dict[str, Any]] = {}
+    if OPPORTUNITY_SCORES_PATH.exists():
+        try:
+            existing_list = json.loads(OPPORTUNITY_SCORES_PATH.read_text(encoding="utf-8"))
+            existing_by_id = {s["area_id"]: s for s in existing_list if isinstance(s, dict) and "area_id" in s}
+        except (OSError, json.JSONDecodeError):
+            existing_by_id = {}
+
+    for score in scores:
+        existing_by_id[score.area_id] = score.to_dict()
+
+    merged = sorted(existing_by_id.values(), key=lambda s: s.get("signal_score", 0), reverse=True)
+
     OPPORTUNITY_SCORES_PATH.write_text(
-        json.dumps([s.to_dict() for s in scores], indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(merged, indent=2, ensure_ascii=False), encoding="utf-8"
     )
     RUN_METADATA_PATH.write_text(
         json.dumps(run_metadata, indent=2, ensure_ascii=False), encoding="utf-8"

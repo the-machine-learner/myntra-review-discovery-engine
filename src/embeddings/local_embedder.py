@@ -14,15 +14,16 @@ class LocalEmbedder:
         logger.info("Loading local embedding model: %s", self.model_name)
         
         # Determine if we should attempt local files only
-        local_only = os.getenv("HF_HUB_OFFLINE", "0").lower() in ("1", "true", "yes")
+        local_only = os.getenv("HF_HUB_OFFLINE", "1").lower() in ("1", "true", "yes")
         try:
             self.model = SentenceTransformer(self.model_name, local_files_only=local_only, device="cpu")
         except Exception as e:
-            if local_only:
-                logger.warning("Local-only load failed for %s. Attempting online download...", self.model_name)
+            logger.warning("Local-only load attempt failed/offline (%s). Attempting online download if available...", e)
+            try:
                 self.model = SentenceTransformer(self.model_name, local_files_only=False, device="cpu")
-            else:
-                raise e
+            except Exception as online_err:
+                logger.error("Could not load sentence-transformers model online or offline: %s", online_err)
+                raise online_err
                 
         self.api_call_count = 0
 

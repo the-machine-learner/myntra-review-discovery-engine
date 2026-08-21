@@ -795,6 +795,8 @@ def main():
         st.session_state["active_nav_tab"] = nav_tabs[0]
 
     with st.sidebar:
+        if LOGO_PATH.exists():
+            st.image(str(LOGO_PATH), width=160)
         render_html(
             '<div style="padding:.2rem 0 1rem 0;border-bottom:1px solid #351F50;margin-bottom:1rem;">'
             '<div style="font-weight:900;color:#FFFFFF;font-size:1.1rem;display:flex;align-items:center;gap:.4rem;">'

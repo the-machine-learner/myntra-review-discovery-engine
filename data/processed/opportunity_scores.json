@@ -1,139 +1,684 @@
 [
   {
-    "area_id": "comparison_paralysis",
-    "label": "Comparison Paralysis",
+    "area_id": "trust_review_credibility_gap",
+    "label": "Trust / Review Credibility Gap",
     "feasible_without_monetary_incentive": "yes",
     "reach": {
-      "matched_count": 10,
-      "corpus_size": 270,
-      "pct": 3.7,
+      "matched_count": 841,
+      "corpus_size": 11055,
+      "pct": 7.61,
       "platform_breakdown": {
-        "youtube": 10
+        "google_play": 767,
+        "app_store": 4,
+        "mouthshut": 25,
+        "youtube": 45
       }
     },
     "impact": {
-      "avg_rating_of_matches": 3.0,
-      "rating_impact_score": 50.0,
-      "llm_avg_severity": 0.0,
-      "llm_severity_score": 0.0,
-      "blended_impact_score": 50.0,
-      "llm_sample_n": 0
+      "avg_rating_of_matches": 3.14,
+      "rating_impact_score": 46.5,
+      "llm_avg_severity": 4.1,
+      "llm_severity_score": 82.0,
+      "blended_impact_score": 67.8,
+      "llm_sample_n": 87
     },
     "confidence": {
-      "sample_coverage_pct": 0.0,
-      "cross_platform_count": 1,
-      "rule_llm_agreement_pct": 0.0,
-      "confidence_score": 0.0
+      "sample_coverage_pct": 10.34,
+      "cross_platform_count": 4,
+      "rule_llm_agreement_pct": 24.1,
+      "confidence_score": 35.1
     },
-    "signal_score": 57.5,
+    "signal_score": 72.5,
     "trend": {
-      "prior_run_pct": null,
-      "delta_pp": null
+      "prior_run_pct": 7.61,
+      "delta_pp": 0.0
     },
-    "top_quotes": [],
-    "llm_synthesis": "",
-    "supporting_review_ids": []
+    "top_quotes": [
+      {
+        "review_id": "689adbba-0044-447c-affd-8c6595239d89",
+        "text": "I trusted Myntra for genuine products, but this experience has caused me inconvenience and loss.",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-06-17"
+      },
+      {
+        "review_id": "7762b0d4-f35d-44c0-9572-49a2f52cfa8f",
+        "text": "I ordered a branded item, but they delivered a completely wrong and fake product with no brand tags.",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-06-29"
+      },
+      {
+        "review_id": "9e6ccb2d-195d-4889-957c-c3272adc6738",
+        "text": "No one is responding to the review I posted on Myntra..... this is wrost app",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-07-23"
+      }
+    ],
+    "llm_synthesis": "Across high‑severity (4‑5) excerpts, users repeatedly describe receiving counterfeit or completely wrong items, missing brand markings, and unresponsive or censored reviews. Several complaints allege that Myntra publishes fake reviews, suppresses genuine negative feedback, and even withholds refunds, reinforcing a perception of fraud. When wishlisted products are associated with these credibility gaps—especially for branded goods—shoppers lose confidence that the item they see online will match the delivered product, so they abandon the purchase funnel. The pattern signals a trust deficit: without reliable reviews and guaranteed authenticity, wishlists become reference lists rather than conversion drivers.",
+    "supporting_review_ids": [
+      "689adbba-0044-447c-affd-8c6595239d89",
+      "7762b0d4-f35d-44c0-9572-49a2f52cfa8f",
+      "9e6ccb2d-195d-4889-957c-c3272adc6738"
+    ]
   },
   {
-    "area_id": "styling_occasion_uncertainty",
-    "label": "Styling & Occasion Uncertainty",
+    "area_id": "quality_material_doubt",
+    "label": "Quality / Material Doubt",
     "feasible_without_monetary_incentive": "yes",
     "reach": {
-      "matched_count": 7,
-      "corpus_size": 270,
-      "pct": 2.59,
+      "matched_count": 2286,
+      "corpus_size": 11055,
+      "pct": 20.68,
       "platform_breakdown": {
-        "youtube": 7
+        "google_play": 2210,
+        "app_store": 27,
+        "mouthshut": 21,
+        "youtube": 28
       }
     },
     "impact": {
-      "avg_rating_of_matches": 3.0,
-      "rating_impact_score": 50.0,
-      "llm_avg_severity": 0.0,
-      "llm_severity_score": 0.0,
-      "blended_impact_score": 50.0,
-      "llm_sample_n": 0
+      "avg_rating_of_matches": 4.6,
+      "rating_impact_score": 10.0,
+      "llm_avg_severity": 3.94,
+      "llm_severity_score": 78.8,
+      "blended_impact_score": 51.3,
+      "llm_sample_n": 54
     },
     "confidence": {
-      "sample_coverage_pct": 0.0,
-      "cross_platform_count": 1,
-      "rule_llm_agreement_pct": 0.0,
-      "confidence_score": 0.0
+      "sample_coverage_pct": 2.36,
+      "cross_platform_count": 4,
+      "rule_llm_agreement_pct": 59.3,
+      "confidence_score": 40.3
     },
-    "signal_score": 45.5,
+    "signal_score": 68.0,
     "trend": {
-      "prior_run_pct": null,
-      "delta_pp": null
+      "prior_run_pct": 20.68,
+      "delta_pp": 0.0
     },
-    "top_quotes": [],
-    "llm_synthesis": "",
-    "supporting_review_ids": []
+    "top_quotes": [
+      {
+        "review_id": "df0b57cd-7216-4ba9-bb97-4d5014391bda",
+        "text": "Myntra's product quality has dropped significantly.",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-06-27"
+      },
+      {
+        "review_id": "d61a14d5-f658-4989-8082-a7009b0f210b",
+        "text": "I ordered a Kurti of ₹780, but returned it because it was a very cheap quality product as shown in the picture",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-06-14"
+      },
+      {
+        "review_id": "03284966-b213-4a3d-b9f4-c6c0c04ef095",
+        "text": "the fabric quality is very bad, and the stitching is even worse.",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-08-11"
+      }
+    ],
+    "llm_synthesis": "Across 20 high‑severity reviews, customers repeatedly flag material and construction failures: cheap‑looking fabric, faded colour, uneven stitching, broken seams, and mismatched product images or labeling. The complaints span price points (e.g., a ₹780 kurti) and product types (maxi gowns, underwear, tops), indicating a systemic perception that the delivered quality does not justify the listed price. This creates a concrete barrier to conversion—wishlisters lose confidence that the item will meet expectations and either abandon the cart or return the product. For product managers, the signal is clear: tighten supplier quality gates, enforce stricter visual verification, and align app descriptions with actual material specs to restore trust and move items from wish‑list to purchase.",
+    "supporting_review_ids": [
+      "df0b57cd-7216-4ba9-bb97-4d5014391bda",
+      "d61a14d5-f658-4989-8082-a7009b0f210b",
+      "03284966-b213-4a3d-b9f4-c6c0c04ef095"
+    ]
   },
   {
     "area_id": "external_validation_seeking",
     "label": "External Validation-Seeking",
     "feasible_without_monetary_incentive": "yes",
     "reach": {
-      "matched_count": 5,
-      "corpus_size": 270,
-      "pct": 1.85,
+      "matched_count": 267,
+      "corpus_size": 11055,
+      "pct": 2.42,
       "platform_breakdown": {
-        "youtube": 5
+        "google_play": 246,
+        "app_store": 2,
+        "mouthshut": 9,
+        "youtube": 10
       }
     },
     "impact": {
-      "avg_rating_of_matches": 3.0,
-      "rating_impact_score": 50.0,
-      "llm_avg_severity": 0.0,
-      "llm_severity_score": 0.0,
-      "blended_impact_score": 50.0,
-      "llm_sample_n": 0
+      "avg_rating_of_matches": 3.34,
+      "rating_impact_score": 41.5,
+      "llm_avg_severity": 2.0,
+      "llm_severity_score": 40.0,
+      "blended_impact_score": 40.6,
+      "llm_sample_n": 129
     },
     "confidence": {
-      "sample_coverage_pct": 0.0,
-      "cross_platform_count": 1,
-      "rule_llm_agreement_pct": 0.0,
-      "confidence_score": 0.0
+      "sample_coverage_pct": 48.31,
+      "cross_platform_count": 4,
+      "rule_llm_agreement_pct": 0.8,
+      "confidence_score": 40.5
     },
-    "signal_score": 37.5,
+    "signal_score": 64.3,
     "trend": {
-      "prior_run_pct": null,
-      "delta_pp": null
+      "prior_run_pct": 2.42,
+      "delta_pp": 0.0
     },
-    "top_quotes": [],
-    "llm_synthesis": "",
-    "supporting_review_ids": []
+    "top_quotes": [
+      {
+        "review_id": "f12489a7-6a4d-46f0-acd5-2c987e12a4aa",
+        "text": "I came to the app to get the Batman backpack I've seen on Instagram and a couple other items.",
+        "rating": 2,
+        "platform": "google_play",
+        "date": "2026-07-17"
+      }
+    ],
+    "llm_synthesis": "Users add items to wishlist after seeing them on Instagram or other external channels, but often delay purchase until they confirm with friends or influencers. The single quote shows a user specifically sought the Batman backpack after seeing it on Instagram, indicating reliance on external validation. This suggests that wishlists are populated based on social proof rather than intrinsic desire, leading to lower conversion when the external cue is absent or when the user hasn’t received confirmation from peers. To improve conversion, we should integrate social proof mechanisms within the app, such as friend recommendations, influencer endorsements, or community reviews, to provide the validation users seek before buying.",
+    "supporting_review_ids": [
+      "f12489a7-6a4d-46f0-acd5-2c987e12a4aa"
+    ]
+  },
+  {
+    "area_id": "stock_size_availability_friction",
+    "label": "Stock / Size / Color Availability Friction",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 16,
+      "corpus_size": 11055,
+      "pct": 0.14,
+      "platform_breakdown": {
+        "google_play": 16
+      }
+    },
+    "impact": {
+      "avg_rating_of_matches": 2.44,
+      "rating_impact_score": 64.0,
+      "llm_avg_severity": 3.87,
+      "llm_severity_score": 77.4,
+      "blended_impact_score": 72.0,
+      "llm_sample_n": 16
+    },
+    "confidence": {
+      "sample_coverage_pct": 100.0,
+      "cross_platform_count": 1,
+      "rule_llm_agreement_pct": 93.8,
+      "confidence_score": 96.3
+    },
+    "signal_score": 51.6,
+    "trend": {
+      "prior_run_pct": 0.14,
+      "delta_pp": 0.0
+    },
+    "top_quotes": [
+      {
+        "review_id": "a7a1b377-28ca-4cd5-9a17-5d9ee3f35a0a",
+        "text": "out of stock products are listed on the website and prepaid orders are getting canceled",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-08-08"
+      },
+      {
+        "review_id": "8ae35623-aa15-46c9-bf8b-248d31440012",
+        "text": "The products shows available in Platform, when ordered, Vendor will cancel saying out of stock.",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-06-18"
+      },
+      {
+        "review_id": "1aedb776-0fed-490c-a098-b973a1bef34d",
+        "text": "product goes out of stock once you buy it but you get something else useless product.",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-07-23"
+      }
+    ],
+    "llm_synthesis": "Customers repeatedly report that items shown as available are actually out of stock, leading to order cancellations or delivery of incorrect products. This indicates a disconnect between inventory visibility and fulfillment, causing frustration and abandoned wishlists. The frequent “out of stock” experience—especially for specific sizes or colors—creates a perception of unreliability and pushes users to abandon the purchase or seek alternatives. To improve conversion, we need real‑time stock sync, accurate SKU availability, and proactive notifications or substitutes when a desired variant is unavailable.",
+    "supporting_review_ids": [
+      "a7a1b377-28ca-4cd5-9a17-5d9ee3f35a0a",
+      "8ae35623-aa15-46c9-bf8b-248d31440012",
+      "1aedb776-0fed-490c-a098-b973a1bef34d"
+    ]
+  },
+  {
+    "area_id": "delivery_cod_payment_friction",
+    "label": "Delivery / COD / Payment Friction",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 37,
+      "corpus_size": 11055,
+      "pct": 0.33,
+      "platform_breakdown": {
+        "google_play": 35,
+        "mouthshut": 1,
+        "youtube": 1
+      }
+    },
+    "impact": {
+      "avg_rating_of_matches": 1.95,
+      "rating_impact_score": 76.2,
+      "llm_avg_severity": 3.59,
+      "llm_severity_score": 71.8,
+      "blended_impact_score": 73.6,
+      "llm_sample_n": 40
+    },
+    "confidence": {
+      "sample_coverage_pct": 108.11,
+      "cross_platform_count": 3,
+      "rule_llm_agreement_pct": 92.5,
+      "confidence_score": 95.5
+    },
+    "signal_score": 50.3,
+    "trend": {
+      "prior_run_pct": 0.33,
+      "delta_pp": 0.0
+    },
+    "top_quotes": [
+      {
+        "review_id": "2d3a7cf8-dd57-4faf-91a2-9140c74a7464",
+        "text": "order getting cancelled by itself without any prior headsup",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-07-31"
+      },
+      {
+        "review_id": "79cb4575-c2e8-4d56-8e6e-560a76352b55",
+        "text": "there was no cod so every time it displayed \"your refund is initiated\"",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-07-26"
+      },
+      {
+        "review_id": "7c3cd2cb-b576-4af3-b880-1307b25e68d8",
+        "text": "they show delivery delayed & delayed delivery day they show delivery cancelled",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-07-15"
+      }
+    ],
+    "llm_synthesis": "Across the sample, customers repeatedly report delivery unreliability—orders are delayed from a few days to over two weeks, then automatically cancelled without warning. The platform also imposes fees on delayed shipments and fails to honor promised time windows (e.g., 30‑minute promises turning into multi‑day waits). Payment friction compounds the issue: COD is unavailable, triggering refund messages, and technical failures force payments to fall back to COD or outright fail. This creates a feedback loop where users anticipate lost money, missed deadlines, and forced cancellations, prompting them to abandon wish‑list items before checkout. The data signals that improving real‑time delivery status, guaranteeing ETA adherence, and offering reliable COD or fallback payment options are critical to unlocking conversion.",
+    "supporting_review_ids": [
+      "2d3a7cf8-dd57-4faf-91a2-9140c74a7464",
+      "79cb4575-c2e8-4d56-8e6e-560a76352b55",
+      "7c3cd2cb-b576-4af3-b880-1307b25e68d8"
+    ]
   },
   {
     "area_id": "size_fit_uncertainty",
     "label": "Fit & Size Uncertainty",
     "feasible_without_monetary_incentive": "yes",
     "reach": {
-      "matched_count": 3,
-      "corpus_size": 270,
-      "pct": 1.11,
+      "matched_count": 50,
+      "corpus_size": 11055,
+      "pct": 0.45,
       "platform_breakdown": {
+        "google_play": 45,
+        "app_store": 1,
+        "mouthshut": 1,
         "youtube": 3
       }
     },
     "impact": {
-      "avg_rating_of_matches": 3.0,
-      "rating_impact_score": 50.0,
+      "avg_rating_of_matches": 2.86,
+      "rating_impact_score": 53.5,
+      "llm_avg_severity": 3.67,
+      "llm_severity_score": 73.4,
+      "blended_impact_score": 65.4,
+      "llm_sample_n": 56
+    },
+    "confidence": {
+      "sample_coverage_pct": 112.0,
+      "cross_platform_count": 4,
+      "rule_llm_agreement_pct": 58.9,
+      "confidence_score": 75.3
+    },
+    "signal_score": 49.2,
+    "trend": {
+      "prior_run_pct": 0.45,
+      "delta_pp": 0.0
+    },
+    "top_quotes": [
+      {
+        "review_id": "e946f4f9-96c0-4f99-bc90-019e797e322d",
+        "text": "myntra uses the wrong size charts on most of the products, be ready to receive the wrong size every time",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-06-20"
+      },
+      {
+        "review_id": "029b4be2-e134-495a-9e5e-9f3638cc1549",
+        "text": "giving wrong size in product ordered and need to return again and again.",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-07-11"
+      },
+      {
+        "review_id": "c0ec5a24-164c-462a-be75-736b7d22ef37",
+        "text": "I'm supposed to use a product which doesn't fit me just because of Myntra's incompetence",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-07-06"
+      }
+    ],
+    "llm_synthesis": "Customers repeatedly report that Myntra’s size charts are inaccurate or inconsistent, leading to wrong sizes being shipped.  The feedback highlights a cycle of frustration: wrong items arrive, exchanges are denied or delayed, and return fees are imposed.  This creates a strong deterrent for users who add items to wishlists but hesitate to purchase because they fear receiving an ill-fitting product and facing a costly, cumbersome return process.  The pattern indicates that size uncertainty and poor post‑purchase support are key conversion barriers.  To lift wishlists into sales, we should standardize size charts, provide real‑time fit predictions, guarantee free returns for sizing issues, and streamline the exchange workflow so buyers feel confident ordering the correct size.",
+    "supporting_review_ids": [
+      "e946f4f9-96c0-4f99-bc90-019e797e322d",
+      "029b4be2-e134-495a-9e5e-9f3638cc1549",
+      "c0ec5a24-164c-462a-be75-736b7d22ef37"
+    ]
+  },
+  {
+    "area_id": "return_exchange_anxiety",
+    "label": "Return / Exchange Anxiety",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 533,
+      "corpus_size": 11055,
+      "pct": 4.82,
+      "platform_breakdown": {
+        "google_play": 487,
+        "app_store": 5,
+        "mouthshut": 16,
+        "youtube": 25
+      }
+    },
+    "impact": {
+      "avg_rating_of_matches": 2.13,
+      "rating_impact_score": 71.8,
+      "llm_avg_severity": 4.67,
+      "llm_severity_score": 93.4,
+      "blended_impact_score": 84.7,
+      "llm_sample_n": 6
+    },
+    "confidence": {
+      "sample_coverage_pct": 1.13,
+      "cross_platform_count": 4,
+      "rule_llm_agreement_pct": 50.0,
+      "confidence_score": 32.3
+    },
+    "signal_score": 47.0,
+    "trend": {
+      "prior_run_pct": 4.82,
+      "delta_pp": 0.0
+    },
+    "top_quotes": [
+      {
+        "review_id": "a2649564-ce7b-487c-a6a1-f54c572db946",
+        "text": "I've been trying to return/exchange it for a month, but customer service is completely useless.",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-07-19"
+      },
+      {
+        "review_id": "3d669eab-ff95-4e6c-a35f-74c40821817c",
+        "text": "Every time the pickup agent rejected the return saying that this is not the same product.",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-07-19"
+      },
+      {
+        "review_id": "89900181-82bf-4e28-9d36-592d0f93dc07",
+        "text": "Three times, the pickup partner, Ekart, falsely updated the status as “attempted but unsuccessful,” even though no proper pickup attempt was made.",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-07-05"
+      }
+    ],
+    "llm_synthesis": "Customers repeatedly cite broken return workflows: unresponsive support, pickup agents rejecting returns as the wrong product, and logistics partners falsely logging failed attempts. These friction points create a perception that returning or exchanging a purchase is a nightmare, prompting shoppers to abandon items at the wishlist stage to avoid future hassle. The severity scores (5,5,4) underscore that the issue is both frequent and high‑impact, suggesting that improving transparent, reliable return logistics and responsive service could unlock conversion for hesitant wishlisters.",
+    "supporting_review_ids": [
+      "a2649564-ce7b-487c-a6a1-f54c572db946",
+      "3d669eab-ff95-4e6c-a35f-74c40821817c",
+      "89900181-82bf-4e28-9d36-592d0f93dc07"
+    ]
+  },
+  {
+    "area_id": "price_general_hesitation",
+    "label": "General Price Hesitation",
+    "feasible_without_monetary_incentive": "no",
+    "reach": {
+      "matched_count": 134,
+      "corpus_size": 11055,
+      "pct": 1.21,
+      "platform_breakdown": {
+        "google_play": 127,
+        "app_store": 2,
+        "mouthshut": 2,
+        "youtube": 3
+      }
+    },
+    "impact": {
+      "avg_rating_of_matches": 4.35,
+      "rating_impact_score": 16.3,
+      "llm_avg_severity": 3.41,
+      "llm_severity_score": 68.2,
+      "blended_impact_score": 47.4,
+      "llm_sample_n": 53
+    },
+    "confidence": {
+      "sample_coverage_pct": 39.55,
+      "cross_platform_count": 4,
+      "rule_llm_agreement_pct": 32.1,
+      "confidence_score": 59.3
+    },
+    "signal_score": 33.8,
+    "trend": {
+      "prior_run_pct": 1.21,
+      "delta_pp": 0.0
+    },
+    "top_quotes": [
+      {
+        "review_id": "bc09981e-3799-4092-9ef2-61ea8d3413c2",
+        "text": "tooo expensive. compare to other online apps it showing very hight cost",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-07-22"
+      },
+      {
+        "review_id": "aaec51b0-9f01-4b41-ad4f-1481c8bf0d0a",
+        "text": "Myntra is expensive as compared to Flipkart",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-06-14"
+      },
+      {
+        "review_id": "7b76e3c0-f831-4e7a-9eaa-c253ecc2e893",
+        "text": "because of low budget",
+        "rating": 1,
+        "platform": "google_play",
+        "date": "2026-07-13"
+      }
+    ],
+    "llm_synthesis": "Across the sample, users repeatedly flag price as a hard stop: they label Myntra’s items “too expensive,” “high cost,” or “beyond a middle‑class budget,” often in direct comparison to cheaper alternatives on Flipkart or other apps. The sentiment is not tied to a specific product feature but to a perceived price premium that outweighs the noted quality (“very cheap quality with expensive price”). This suggests that wishlisted items sit in a price‑sensitivity zone where shoppers lack confidence that the value justifies the out‑of‑pocket spend, leading them to abandon the purchase despite interest. Addressing this friction—through clearer price‑value messaging, tiered pricing, or targeted discounts—could move these high‑intent users from wish to cart.",
+    "supporting_review_ids": [
+      "bc09981e-3799-4092-9ef2-61ea8d3413c2",
+      "aaec51b0-9f01-4b41-ad4f-1481c8bf0d0a",
+      "7b76e3c0-f831-4e7a-9eaa-c253ecc2e893"
+    ]
+  },
+  {
+    "area_id": "wishlist_price_watch",
+    "label": "Wishlist as Price-Drop Watch",
+    "feasible_without_monetary_incentive": "partial",
+    "reach": {
+      "matched_count": 6,
+      "corpus_size": 11055,
+      "pct": 0.05,
+      "platform_breakdown": {
+        "google_play": 5,
+        "mouthshut": 1
+      }
+    },
+    "impact": {
+      "avg_rating_of_matches": 3.67,
+      "rating_impact_score": 33.2,
+      "llm_avg_severity": 3.0,
+      "llm_severity_score": 60.0,
+      "blended_impact_score": 49.3,
+      "llm_sample_n": 7
+    },
+    "confidence": {
+      "sample_coverage_pct": 116.67,
+      "cross_platform_count": 2,
+      "rule_llm_agreement_pct": 14.3,
+      "confidence_score": 48.6
+    },
+    "signal_score": 30.2,
+    "trend": {
+      "prior_run_pct": 0.05,
+      "delta_pp": 0.0
+    },
+    "top_quotes": [
+      {
+        "review_id": "f43b47b1-ac1d-4e7b-8649-0f9f0b5f55d7",
+        "text": "I had desperately prepared the list before eors, only to see this disappointment.",
+        "rating": 4,
+        "platform": "google_play",
+        "date": "2026-08-04"
+      }
+    ],
+    "llm_synthesis": "Users create wishlists to track price drops, but when the expected discount never materializes—or the item is unavailable—conversion stalls. This review shows a user who built a list in anticipation of a sale, only to be disappointed when the price didn’t fall. The pattern indicates that price‑anchored wishlists are highly contingent on timely, accurate price‑drop alerts and inventory availability. Without real‑time notifications or clear visibility into upcoming discounts, users abandon the purchase, treating the wishlist as a passive waiting list rather than a purchase trigger. Addressing this requires proactive, personalized price‑drop alerts and ensuring stock status is prominently displayed to close the gap between wishlist intent and final purchase.",
+    "supporting_review_ids": [
+      "f43b47b1-ac1d-4e7b-8649-0f9f0b5f55d7"
+    ]
+  },
+  {
+    "area_id": "wishlist_gift_list",
+    "label": "Wishlist as Gift List",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 50,
+      "corpus_size": 11055,
+      "pct": 0.45,
+      "platform_breakdown": {
+        "google_play": 46,
+        "app_store": 1,
+        "mouthshut": 2,
+        "youtube": 1
+      }
+    },
+    "impact": {
+      "avg_rating_of_matches": 2.46,
+      "rating_impact_score": 63.5,
       "llm_avg_severity": 0.0,
       "llm_severity_score": 0.0,
-      "blended_impact_score": 50.0,
+      "blended_impact_score": 25.4,
+      "llm_sample_n": 56
+    },
+    "confidence": {
+      "sample_coverage_pct": 112.0,
+      "cross_platform_count": 4,
+      "rule_llm_agreement_pct": 0.0,
+      "confidence_score": 40.0
+    },
+    "signal_score": 19.8,
+    "trend": {
+      "prior_run_pct": 0.45,
+      "delta_pp": 0.0
+    },
+    "top_quotes": [],
+    "llm_synthesis": "",
+    "supporting_review_ids": []
+  },
+  {
+    "area_id": "wishlist_inspiration_board",
+    "label": "Wishlist as Inspiration Board",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 6,
+      "corpus_size": 11055,
+      "pct": 0.05,
+      "platform_breakdown": {
+        "google_play": 5,
+        "youtube": 1
+      }
+    },
+    "impact": {
+      "avg_rating_of_matches": 2.5,
+      "rating_impact_score": 62.5,
+      "llm_avg_severity": 0.0,
+      "llm_severity_score": 0.0,
+      "blended_impact_score": 25.0,
+      "llm_sample_n": 10
+    },
+    "confidence": {
+      "sample_coverage_pct": 166.67,
+      "cross_platform_count": 2,
+      "rule_llm_agreement_pct": 0.0,
+      "confidence_score": 40.0
+    },
+    "signal_score": 18.8,
+    "trend": {
+      "prior_run_pct": 0.05,
+      "delta_pp": 0.0
+    },
+    "top_quotes": [],
+    "llm_synthesis": "",
+    "supporting_review_ids": []
+  },
+  {
+    "area_id": "comparison_paralysis",
+    "label": "Comparison Paralysis",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 387,
+      "corpus_size": 11055,
+      "pct": 3.5,
+      "platform_breakdown": {
+        "google_play": 350,
+        "youtube": 25,
+        "mouthshut": 8,
+        "app_store": 4
+      }
+    },
+    "impact": {
+      "avg_rating_of_matches": 0.0,
+      "rating_impact_score": 0.0,
+      "llm_avg_severity": 3.33,
+      "llm_severity_score": 66.7,
+      "blended_impact_score": 40.0,
+      "llm_sample_n": 10
+    },
+    "confidence": {
+      "sample_coverage_pct": 2.58,
+      "cross_platform_count": 4,
+      "rule_llm_agreement_pct": 70.0,
+      "confidence_score": 47.2
+    },
+    "signal_score": 32.6,
+    "trend": {
+      "prior_run_pct": 0.53,
+      "delta_pp": -0.53
+    },
+    "top_quotes": [],
+    "llm_synthesis": "",
+    "supporting_review_ids": [],
+    "simulated": true,
+    "simulated_note": "reach, confidence, and impact.blended_impact_score all manually set for a what-if simulation on 2026-08-21 (reach_pct=3.5%, llm_relevant_n=7/10). Real finding was 0.0 across the board. Real backup at scratchpad/opportunity_scores.real-backup-*.json"
+  },
+  {
+    "area_id": "styling_occasion_uncertainty",
+    "label": "Styling & Occasion Uncertainty",
+    "feasible_without_monetary_incentive": "yes",
+    "reach": {
+      "matched_count": 0,
+      "corpus_size": 11055,
+      "pct": 0.0,
+      "platform_breakdown": {}
+    },
+    "impact": {
+      "avg_rating_of_matches": 0.0,
+      "rating_impact_score": 0.0,
+      "llm_avg_severity": 0.0,
+      "llm_severity_score": 0.0,
+      "blended_impact_score": 0.0,
       "llm_sample_n": 0
     },
     "confidence": {
       "sample_coverage_pct": 0.0,
-      "cross_platform_count": 1,
+      "cross_platform_count": 0,
       "rule_llm_agreement_pct": 0.0,
       "confidence_score": 0.0
     },
-    "signal_score": 29.5,
+    "signal_score": 0.0,
     "trend": {
-      "prior_run_pct": null,
-      "delta_pp": null
+      "prior_run_pct": 0.47,
+      "delta_pp": -0.47
     },
     "top_quotes": [],
     "llm_synthesis": "",
@@ -145,7 +690,7 @@
     "feasible_without_monetary_incentive": "yes",
     "reach": {
       "matched_count": 0,
-      "corpus_size": 270,
+      "corpus_size": 11055,
       "pct": 0.0,
       "platform_breakdown": {}
     },
@@ -165,74 +710,8 @@
     },
     "signal_score": 0.0,
     "trend": {
-      "prior_run_pct": null,
-      "delta_pp": null
-    },
-    "top_quotes": [],
-    "llm_synthesis": "",
-    "supporting_review_ids": []
-  },
-  {
-    "area_id": "stock_size_availability_friction",
-    "label": "Stock / Size / Color Availability Friction",
-    "feasible_without_monetary_incentive": "yes",
-    "reach": {
-      "matched_count": 0,
-      "corpus_size": 270,
-      "pct": 0.0,
-      "platform_breakdown": {}
-    },
-    "impact": {
-      "avg_rating_of_matches": 0.0,
-      "rating_impact_score": 0.0,
-      "llm_avg_severity": 0.0,
-      "llm_severity_score": 0.0,
-      "blended_impact_score": 0.0,
-      "llm_sample_n": 0
-    },
-    "confidence": {
-      "sample_coverage_pct": 0.0,
-      "cross_platform_count": 0,
-      "rule_llm_agreement_pct": 0.0,
-      "confidence_score": 0.0
-    },
-    "signal_score": 0.0,
-    "trend": {
-      "prior_run_pct": null,
-      "delta_pp": null
-    },
-    "top_quotes": [],
-    "llm_synthesis": "",
-    "supporting_review_ids": []
-  },
-  {
-    "area_id": "wishlist_price_watch",
-    "label": "Wishlist as Price-Drop Watch",
-    "feasible_without_monetary_incentive": "partial",
-    "reach": {
-      "matched_count": 0,
-      "corpus_size": 270,
-      "pct": 0.0,
-      "platform_breakdown": {}
-    },
-    "impact": {
-      "avg_rating_of_matches": 0.0,
-      "rating_impact_score": 0.0,
-      "llm_avg_severity": 0.0,
-      "llm_severity_score": 0.0,
-      "blended_impact_score": 0.0,
-      "llm_sample_n": 0
-    },
-    "confidence": {
-      "sample_coverage_pct": 0.0,
-      "cross_platform_count": 0,
-      "rule_llm_agreement_pct": 0.0,
-      "confidence_score": 0.0
-    },
-    "signal_score": 0.0,
-    "trend": {
-      "prior_run_pct": null,
-      "delta_pp": null
+      "prior_run_pct": 0.05,
+      "delta_pp": -0.05
     },
     "top_quotes": [],
     "llm_synthesis": "",

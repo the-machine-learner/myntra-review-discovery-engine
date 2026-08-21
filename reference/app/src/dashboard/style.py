@@ -52,10 +52,10 @@ h1, h2, h3, h4, h5, h6 { color: #FFFFFF !important; font-weight: 800 !important;
 .stTabs [data-baseweb="tab-list"] { gap: .5rem; border-bottom: none; background: transparent; }
 .stTabs [data-baseweb="tab"] {
     background: #1B1028 !important; border-radius: 500px !important; padding: .45rem 1.25rem !important;
-    color: #B6ABB6 !important; font-weight: 700 !important; font-size: .85rem !important; border: none !important;
+    color: #F41CB2 !important; font-weight: 700 !important; font-size: .85rem !important; border: none !important;
     transition: all .25s ease !important;
 }
-.stTabs [data-baseweb="tab"]:hover { color: #FFFFFF !important; background: #28183C !important; }
+.stTabs [data-baseweb="tab"]:hover { color: #F41CB2 !important; background: #28183C !important; }
 .stTabs [aria-selected="true"] { background: #3C1053 !important; color: #FFFFFF !important; border: 1px solid #FF8A00 !important; }
 .stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"] { display: none !important; }
 
@@ -68,9 +68,15 @@ h1, h2, h3, h4, h5, h6 { color: #FFFFFF !important; font-weight: 800 !important;
 .stButton > button:hover { transform: scale(1.04); background: #FFA233 !important; color: #FFFFFF !important; }
 .stButton > button:focus { box-shadow: none !important; color: #FFFFFF !important; }
 
-/* Inputs */
+/* Inputs & Placeholders & Caret Cursor */
 input, textarea, div[data-baseweb="input"] input, [data-testid="stChatInput"] textarea {
     background: #28183C !important; color: #FFFFFF !important; border-radius: 8px !important; border: 1px solid transparent !important;
+    caret-color: #231F20 !important;
+}
+input::placeholder, textarea::placeholder, [data-testid="stChatInput"] textarea::placeholder,
+div[data-baseweb="input"] input::placeholder, [data-baseweb="base-input"] input::placeholder {
+    color: #231F20 !important;
+    opacity: 0.6 !important;
 }
 div[data-baseweb="select"] > div, div[data-baseweb="input"] {
     background: #28183C !important; border-radius: 8px !important; border: 1px solid transparent !important; color: #fff !important;
@@ -82,11 +88,29 @@ label, .stRadio label, .stSelectbox label { color: #B6ABB6 !important; font-weig
 .stRadio [role="radiogroup"] { gap: .5rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
 .stRadio [role="radiogroup"] label {
     background: #1B1028 !important; border-radius: 500px !important; padding: .45rem 1.25rem !important;
-    color: #B6ABB6 !important; font-weight: 700 !important; font-size: .88rem !important; border: 1px solid #351F50 !important;
+    color: #F41CB2 !important; font-weight: 700 !important; font-size: .88rem !important; border: 1px solid #351F50 !important;
     transition: all .25s ease !important; cursor: pointer; display: inline-flex !important; align-items: center !important;
 }
-.stRadio [role="radiogroup"] label:hover { color: #FFFFFF !important; background: #28183C !important; }
-.stRadio [role="radiogroup"] label:has(input:checked) { background: #3C1053 !important; color: #FFFFFF !important; border: 1px solid #FF8A00 !important; }
+.stRadio [role="radiogroup"] label *,
+.stRadio [role="radiogroup"] label p,
+.stRadio [role="radiogroup"] label span,
+.stRadio [role="radiogroup"] label div {
+    color: #F41CB2 !important;
+}
+.stRadio [role="radiogroup"] label:hover,
+.stRadio [role="radiogroup"] label:hover *,
+.stRadio [role="radiogroup"] label:hover p,
+.stRadio [role="radiogroup"] label:hover span {
+    color: #F41CB2 !important; background: #28183C !important;
+}
+.stRadio [role="radiogroup"] label:has(input:checked) {
+    background: #3C1053 !important; color: #FFFFFF !important; border: 1px solid #FF8A00 !important;
+}
+.stRadio [role="radiogroup"] label:has(input:checked) *,
+.stRadio [role="radiogroup"] label:has(input:checked) p,
+.stRadio [role="radiogroup"] label:has(input:checked) span {
+    color: #FFFFFF !important;
+}
 .stRadio [role="radiogroup"] input { display: none !important; }
 
 /* Sidebar Vertical Navigation Runner */
@@ -113,15 +137,29 @@ label, .stRadio label, .stSelectbox label { color: #B6ABB6 !important; font-weig
     padding: .75rem 1rem !important;
     background: #1B1028 !important;
     border: 1px solid #351F50 !important;
-    color: #B6ABB6 !important;
+    color: #F41CB2 !important;
     font-weight: 700 !important;
     font-size: .88rem !important;
     transition: all .2s ease !important;
 }
-[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:hover {
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label *,
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label p,
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label span,
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label div[data-testid="stMarkdownContainer"] p {
+    color: #F41CB2 !important;
+}
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:hover,
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:hover *,
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:hover p,
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:hover span {
     background: #28183C !important;
-    color: #FFFFFF !important;
+    color: #F41CB2 !important;
     border-color: #5C1D80 !important;
+}
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked) *,
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked) p,
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked) span {
+    color: #FFFFFF !important;
 }
 /* Parent Container Expansion & Alignment for stExpandSidebarButton */
 .st-emotion-cache-70qvj9,
