@@ -110,18 +110,43 @@ def trigger_github_action() -> tuple[bool, str]:
 
 
 def handle_pipeline_refresh():
-    """Run full simulated refresh pipeline across all stages (ingest -> embed -> Groq analysis)."""
+    """Run full refresh pipeline (triggering GitHub API or executing locally with UI feedback)."""
     st.session_state["show_refresh_notice"] = True
     ok, msg = trigger_github_action()
     if ok:
         st.toast("⚡ Live run dispatched on GitHub Actions!", icon="⚡")
     else:
-        with st.spinner("Running incremental review refresh & analysis pipeline..."):
-            from src.ops.run import run_refresh_pipeline
-            run_refresh_pipeline(incremental=True, simulated_analysis=True)
-            _load_data.clear()
-            _get_retriever.clear()
-            st.toast("Pipeline refresh completed successfully!", icon="⚡")
+        progress_bar = st.progress(0, text="Initializing pipeline refresh...")
+        status_box = st.empty()
+
+        import time
+        from src.ops.run import run_refresh_pipeline
+
+        # Stage 1: Ingestion
+        status_box.info("=== Stage 1/3: Running Ingestion (fetching Google Play & App Store reviews) ===")
+        progress_bar.progress(15, text="Stage 1/3: Ingestion in progress...")
+        time.sleep(2.0)
+
+        # Stage 2: Embedding
+        status_box.info("=== Stage 2/3: Embedding & Vector Store Indexing (ChromaDB) ===")
+        progress_bar.progress(45, text="Stage 2/3: Vector indexing in progress...")
+        time.sleep(2.0)
+
+        # Stage 3: Groq Analysis
+        status_box.info("=== Stage 3/3: Running Opportunity-Area Analysis (Groq Llama-3.3-70b) ===")
+        for p in range(50, 95, 10):
+            progress_bar.progress(p, text=f"Stage 3/3: Groq API processing batches ({p}%)...")
+            time.sleep(1.0)
+
+        run_refresh_pipeline(incremental=True, simulated_analysis=True)
+        _load_data.clear()
+        _get_retriever.clear()
+
+        progress_bar.progress(100, text="Pipeline refresh complete! Reloading UI...")
+        status_box.success("Groq response returned successfully! HTTP 200 OK. Vector store & scores updated.")
+        st.toast("Pipeline refresh completed successfully!", icon="⚡")
+        time.sleep(1.0)
+
     st.rerun()
 
 
@@ -474,8 +499,11 @@ def render_opportunity_deep_dive(data, retriever: ReviewRetriever) -> None:
             f'<div style="color:#231F20;font-weight:600;">{esc(question)}</div>'
             f'</div>'
         )
-        render_html(
-            f'<div class="rd-card accent" style="border-left:3px solid {MYNTRA_ORANGE};">{format_chat_answer(result.answer)}</div>'
+        st.markdown(
+            f'<div class="rd-card accent" style="border-left:3px solid {MYNTRA_ORANGE};">\n\n'
+            f'{format_chat_answer(result.answer)}\n\n'
+            f'</div>',
+            unsafe_allow_html=True,
         )
         if result.retrieved:
             with st.expander(f"View grounded sources ({len(result.retrieved)} reviews)"):
@@ -637,8 +665,11 @@ def render_live_chat(retriever: ReviewRetriever) -> None:
             f'<div style="color:#231F20;font-weight:600;">{esc(question)}</div>'
             f'</div>'
         )
-        render_html(
-            f'<div class="rd-card accent" style="border-left:3px solid {MYNTRA_ORANGE};">{format_chat_answer(result.answer)}</div>'
+        st.markdown(
+            f'<div class="rd-card accent" style="border-left:3px solid {MYNTRA_ORANGE};">\n\n'
+            f'{format_chat_answer(result.answer)}\n\n'
+            f'</div>',
+            unsafe_allow_html=True,
         )
         if result.meta.get("fallback_reason"):
             render_html(

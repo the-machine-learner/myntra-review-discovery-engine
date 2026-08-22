@@ -445,16 +445,22 @@ def review_card(*, review_id: str, rating: int, date: str, app_version: str,
 
 
 def format_chat_answer(answer: str) -> str:
-    """Render a grounded answer with prominent insight text and small, de-emphasised
-    [review_id: ...] citations shown as compact id pills."""
-    escaped = esc(answer)
+    """Render a grounded answer cleanly in Streamlit with proper markdown tables,
+    formatted lists, bold text, and compact citation pills."""
+    if not answer:
+        return ""
 
     def _cite(match: re.Match) -> str:
         rid = match.group(1)
-        return f'<span class="rd-cite">id {esc(rid[:8])}</span>'
+        return f'<span class="rd-cite">id {html.escape(rid[:8])}</span>'
 
-    body = _CITATION_RE.sub(_cite, escaped)
-    return f'<div class="rd-answer">{body}</div>'
+    # Convert citations into styled pills
+    processed = _CITATION_RE.sub(_cite, answer)
+
+    # Clean up excess consecutive blank lines that Groq markdown formatting produces
+    processed = re.sub(r"\n{3,}", "\n\n", processed)
+
+    return f'<div class="rd-answer">{processed}</div>'
 
 
 def render_html(markup: str) -> None:
