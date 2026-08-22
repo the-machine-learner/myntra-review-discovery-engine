@@ -454,6 +454,9 @@ def format_chat_answer(answer: str) -> str:
         rid = match.group(1)
         return f'<span class="rd-cite">id {html.escape(rid[:8])}</span>'
 
+    # Convert citations into styled pills
+    processed = _CITATION_RE.sub(_cite, str(answer))
+
     # Collapse any multi-line blank spaces into single line breaks
     processed = re.sub(r"\n\s*\n+", "\n\n", processed).strip()
 
