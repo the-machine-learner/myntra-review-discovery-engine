@@ -11,15 +11,35 @@ if dotenv_file.is_file():
     load_dotenv(dotenv_file)
 
 def get_secret(key: str, default: str = "") -> str:
-    """Retrieve secret/config value prioritizing Streamlit st.secrets over os.getenv."""
+    """Retrieve secret/config value prioritizing Streamlit st.secrets over os.getenv.
+    Supports flat keys ('GROQ_API_KEY'), lowercased keys ('groq_api_key'),
+    and nested section dicts ('groq' -> 'api_key' or 'groq' -> 'GROQ_API_KEY').
+    """
     try:
         import streamlit as st
-        if hasattr(st, "secrets") and key in st.secrets:
-            val = st.secrets[key]
-            return str(val)
+        if hasattr(st, "secrets") and st.secrets:
+            # 1. Direct key match (e.g. st.secrets["GROQ_API_KEY"])
+            if key in st.secrets and isinstance(st.secrets[key], (str, int, float, bool)):
+                return str(st.secrets[key])
+
+            # 2. Lowercase key match (e.g. st.secrets["groq_api_key"])
+            lower_key = key.lower()
+            if lower_key in st.secrets and isinstance(st.secrets[lower_key], (str, int, float, bool)):
+                return str(st.secrets[lower_key])
+
+            # 3. Search nested section headers (e.g. [groq] api_key = "..." or [general] GROQ_API_KEY = "...")
+            for sec_name, sec_val in st.secrets.items():
+                if isinstance(sec_val, dict) or hasattr(sec_val, "items"):
+                    try:
+                        for k, v in sec_val.items():
+                            if k.upper() == key.upper() and isinstance(v, (str, int, float, bool)):
+                                return str(v)
+                    except Exception:
+                        continue
     except Exception:
         pass
-    return os.getenv(key, default)
+
+    return os.getenv(key, os.getenv(key.lower(), default))
 
 DATA_DIR = PROJECT_ROOT / "data"
 PROCESSED_DIR = DATA_DIR / "processed"
