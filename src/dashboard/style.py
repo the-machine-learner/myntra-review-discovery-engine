@@ -346,8 +346,8 @@ blockquote { border-left: 4px solid #F2551D !important; padding: .25rem 0 .25rem
 .rd-pill-row { display: flex; flex-wrap: wrap; gap: .4rem; margin: .2rem 0 .6rem 0; }
 
 /* ---- Chat answer: bold insights, de-emphasised inline citations ---- */
-.rd-answer { color: #231F20; font-size: 1.05rem; font-weight: 600; line-height: 1.7;
-    letter-spacing: -.005em; white-space: pre-wrap; }
+.rd-answer { color: #231F20; font-size: 1.05rem; font-weight: 600; line-height: 1.6;
+    letter-spacing: -.005em; }
 .rd-answer .rd-cite {
     display: inline-block; font-size: .62rem; font-weight: 700; line-height: 1;
     color: #C23F10; background: #FDEAF6; border: 1px solid #F9C7E8; border-radius: 500px;
@@ -454,13 +454,10 @@ def format_chat_answer(answer: str) -> str:
         rid = match.group(1)
         return f'<span class="rd-cite">id {html.escape(rid[:8])}</span>'
 
-    # Convert citations into styled pills
-    processed = _CITATION_RE.sub(_cite, answer)
+    # Collapse any multi-line blank spaces into single line breaks
+    processed = re.sub(r"\n\s*\n+", "\n\n", processed).strip()
 
-    # Clean up excess consecutive blank lines that Groq markdown formatting produces
-    processed = re.sub(r"\n{3,}", "\n\n", processed)
-
-    return f'<div class="rd-answer">{processed}</div>'
+    return f'<div class="rd-answer">\n\n{processed}\n\n</div>'
 
 
 def render_html(markup: str) -> None:
