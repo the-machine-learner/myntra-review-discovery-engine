@@ -186,6 +186,10 @@ label, .stRadio label, .stSelectbox label { color: #231F20 !important; font-weig
     color: #F41CB2 !important;
     border-color: #F9B8E4 !important;
 }
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked) {
+    background: #F41CB2 !important;
+    border-color: #F2551D !important;
+}
 [data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked) *,
 [data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked) p,
 [data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked) span {
