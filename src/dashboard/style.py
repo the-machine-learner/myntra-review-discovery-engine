@@ -141,6 +141,12 @@ label, .stRadio label, .stSelectbox label { color: #231F20 !important; font-weig
 .stRadio [role="radiogroup"] label:has(input:checked) span {
     color: #FFFFFF !important;
 }
+.stRadio [role="radiogroup"] label:has(input:checked):hover,
+.stRadio [role="radiogroup"] label:has(input:checked):hover *,
+.stRadio [role="radiogroup"] label:has(input:checked):hover p,
+.stRadio [role="radiogroup"] label:has(input:checked):hover span {
+    background: #F41CB2 !important; color: #FFFFFF !important; border-color: #F2551D !important;
+}
 .stRadio [role="radiogroup"] input { display: none !important; }
 
 /* Sidebar Vertical Navigation Runner */
@@ -194,6 +200,14 @@ label, .stRadio label, .stSelectbox label { color: #231F20 !important; font-weig
 [data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked) p,
 [data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked) span {
     color: #FFFFFF !important;
+}
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked):hover,
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked):hover *,
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked):hover p,
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] label:has(input:checked):hover span {
+    background: #F41CB2 !important;
+    color: #FFFFFF !important;
+    border-color: #F2551D !important;
 }
 /* Parent Container Expansion & Alignment for stExpandSidebarButton */
 .st-emotion-cache-70qvj9,
